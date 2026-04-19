@@ -1,28 +1,19 @@
-
-# Кэш импорта
-/tin-raft-company-3d/.import/
-
-# Служебные файлы Godot
-/tin-raft-company-3d/.godot/
-
-# Экспортированные сборки
-/tin-raft-company-3d/export.cfg
-/tin-raft-company-3d/export_presets.cfg
+# Godot
+.godot/
+.import/
 
 # Временные файлы
 *.tmp
 *.log
 
-# Системные файлы
-/tin-raft-company-3d/.DS_Store
-/tin-raft-company-3d/Thumbs.db
-
+# Системные
+.DS_Store
+Thumbs.db
 
 # Сборки
-/tin-raft-company-3d/bin/
-/tin-raft-company-3d/obj/
+bin/
+obj/
 
-# IDE (по желанию)
-/tin-raft-company-3d/.vscode/
-/tin-raft-company-3d/.idea/
-
+# IDE
+.vscode/
+.idea/
