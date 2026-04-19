@@ -1,21 +1,24 @@
 [gd_scene format=3 uid="uid://c6on4q0ua0ayf"]
 
-[ext_resource type="PackedScene" uid="uid://cqi7ifwvg413a" path="res://scenes/inside/capsul.tscn" id="1_sugp2"]
+[ext_resource type="PackedScene" uid="uid://cqi7ifwvg413a" path="res://scenes/inside/capsule.tscn" id="1_sugp2"]
 [ext_resource type="PackedScene" uid="uid://dk3npfd2tkanp" path="res://scenes/inside/interactable_object.tscn" id="2_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
+[ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
 
-[node name="Main" type="Node3D" unique_id=1032035784]
+[node name="Inside" type="Node3D" unique_id=1032035784]
 
-[node name="capsul" parent="." unique_id=495489639 instance=ExtResource("1_sugp2")]
+[node name="Border" parent="." unique_id=495489639 instance=ExtResource("1_sugp2")]
 transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
 
-[node name="interactable_object" parent="capsul" unique_id=2042901232 instance=ExtResource("2_jyhfs")]
+[node name="InteractableObject" parent="Border" unique_id=2042901232 instance=ExtResource("2_jyhfs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.99554586, -4.652519)
 ui_scene = ExtResource("3_jyhfs")
 
-[node name="player" parent="." unique_id=914611990 instance=ExtResource("3_tbgi4")]
+[node name="Player" parent="." unique_id=914611990 instance=ExtResource("3_tbgi4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.782021, 1.9496758, 0)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
+
+[node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]

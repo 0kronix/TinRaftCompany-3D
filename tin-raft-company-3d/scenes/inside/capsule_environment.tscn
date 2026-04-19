@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://d0v1j4nf11dcd"]
+
+[sub_resource type="Environment" id="Environment_5qajg"]
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.3
+
+[node name="CapsuleEnvironment" type="Node3D" unique_id=2084234321]
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1866943581]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6982646, -0.20920122)
+light_energy = 2.0
+omni_range = 15.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1877759481]
+environment = SubResource("Environment_5qajg")
