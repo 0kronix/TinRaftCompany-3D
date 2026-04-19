@@ -15,7 +15,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.99554586, -4.652519)
 ui_scene = ExtResource("3_jyhfs")
 
 [node name="player" parent="." unique_id=914611990 instance=ExtResource("3_tbgi4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8194394, 1.9496758, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.782021, 1.9496758, 0)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
