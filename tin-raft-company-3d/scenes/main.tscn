@@ -23,7 +23,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.782021, 1.9496758, 0)
 layer = 10
 
 [node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]
-
-[node name="Node3D" type="Node3D" parent="CapsuleEnvironment" unique_id=623101884]
-
-[node name="Asteroids" parent="." unique_id=1671113747 instance=ExtResource("6_tefeu")]

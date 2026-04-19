@@ -1,48 +1,35 @@
-[gd_scene format=3 uid="uid://cu60ibt14lncv"]
+[gd_scene format=3 uid="uid://c15behmuw6jhs"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fjc4o"]
-sky_top_color = Color(0, 0, 0, 1)
-sky_horizon_color = Color(0.00915174, 3.88054e-07, 0.116433, 1)
-sky_cover_modulate = Color(0, 0, 0, 1)
-ground_bottom_color = Color(0, 0, 0, 1)
-ground_horizon_color = Color(0, 0, 0, 1)
-sun_angle_max = 0.0
+[ext_resource type="Shader" uid="uid://ckd655w7g28qt" path="res://scripts/new_shader.gdshader" id="1_gdb0c"]
 
-[sub_resource type="Sky" id="Sky_4rkk8"]
-sky_material = SubResource("ProceduralSkyMaterial_fjc4o")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ql5uv"]
+shader = ExtResource("1_gdb0c")
+shader_parameter/star_density = 0.800000038
+shader_parameter/star_brightness = 1.5
+shader_parameter/sky_color = Color(0, 0, 0.05, 1)
+shader_parameter/star_size_min = 0.03
+shader_parameter/star_size_max = 0.08
+shader_parameter/star_size_bias = 2.5
+shader_parameter/star_color_warm = Color(1, 0.85, 0.7, 1)
+shader_parameter/star_color_cold = Color(0.7, 0.85, 1, 1)
+shader_parameter/color_variance = 1.0
+shader_parameter/flicker_speed = 1.0
+shader_parameter/flicker_strength = 0.25
 
-[sub_resource type="Environment" id="Environment_7nun0"]
-background_mode = 1
-background_color = Color(0.00747204, 0.0108099, 0.0551852, 1)
-sky = SubResource("Sky_4rkk8")
+[sub_resource type="Sky" id="Sky_33yt6"]
+sky_material = SubResource("ShaderMaterial_ql5uv")
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_fjc4o"]
-emission_shape = 2
-emission_sphere_radius = 100.0
-direction = Vector3(0, 0, 0)
-gravity = Vector3(0, 0, 0)
-scale_min = 0.1
-scale_max = 5.0
+[sub_resource type="Environment" id="Environment_moagf"]
+background_mode = 2
+sky = SubResource("Sky_33yt6")
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.2
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4rkk8"]
-emission_enabled = true
-emission = Color(1, 1, 1, 1)
-emission_energy_multiplier = 2.0
+[node name="SpaceEnvironment" type="Node3D" unique_id=1182356239]
 
-[sub_resource type="SphereMesh" id="SphereMesh_7nun0"]
-material = SubResource("StandardMaterial3D_4rkk8")
-radius = 0.05
-height = 0.1
-rings = 8
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1040392590]
+environment = SubResource("Environment_moagf")
 
-[node name="SpaceEnvironment" type="Node3D" unique_id=1338858341]
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1179216970]
-environment = SubResource("Environment_7nun0")
-
-[node name="Stars" type="GPUParticles3D" parent="." unique_id=917560167]
-visibility_range_end = 200.0
-amount = 300
-lifetime = 40.0
-process_material = SubResource("ParticleProcessMaterial_fjc4o")
-draw_pass_1 = SubResource("SphereMesh_7nun0")
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=351998908]
+transform = Transform3D(-0.24778868, 0.6721354, -0.6977354, -0.7929786, 0.2730444, 0.54463905, 0.55658394, 0.68824464, 0.4653317, 0, 0, 0)
