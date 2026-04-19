@@ -32,3 +32,4 @@ obj/
 # IDE (по желанию)
 .vscode/
 .idea/
+/tin-raft-company-3d/.godot
