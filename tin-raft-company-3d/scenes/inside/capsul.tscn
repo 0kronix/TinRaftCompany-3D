@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cqi7ifwvg413a"]
+
+[sub_resource type="Environment" id="Environment_5ebgt"]
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.3
+
+[node name="capsul" type="Node3D" unique_id=495489639]
+
+[node name="ceiling" type="CSGBox3D" parent="." unique_id=1051039000]
+transform = Transform3D(10, 0, 0, 0, 0.2, 0, 0, 0, 10, 0, 5, 0)
+use_collision = true
+
+[node name="floor" type="CSGBox3D" parent="." unique_id=1562792414]
+transform = Transform3D(10, 0, 0, 0, 0.2, 0, 0, 0, 10, 0, 0, 0)
+use_collision = true
+
+[node name="wall" type="CSGBox3D" parent="." unique_id=1638834926]
+transform = Transform3D(10, 0, 0, 0, 5, 0, 0, 0, 0.2, 0, 2.5, 5)
+use_collision = true
+
+[node name="wall2" type="CSGBox3D" parent="." unique_id=378655684]
+transform = Transform3D(10, 0, 0, 0, 5, 0, 0, 0, 0.2, 0, 2.5, -5)
+use_collision = true
+
+[node name="wall3" type="CSGBox3D" parent="." unique_id=1357364359]
+transform = Transform3D(-4.371139e-07, 0, 0.2, 0, 5, 0, -10, 0, -8.742278e-09, 5, 2.5, 0)
+use_collision = true
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1290408916]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6982646, -0.20920122)
+light_energy = 2.0
+omni_range = 15.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=786151330]
+environment = SubResource("Environment_5ebgt")

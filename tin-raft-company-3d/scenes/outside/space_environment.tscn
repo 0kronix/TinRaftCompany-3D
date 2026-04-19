@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://cu60ibt14lncv"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fjc4o"]
+sky_top_color = Color(0, 0, 0, 1)
+sky_horizon_color = Color(0.00915174, 3.88054e-07, 0.116433, 1)
+sky_cover_modulate = Color(0, 0, 0, 1)
+ground_bottom_color = Color(0, 0, 0, 1)
+ground_horizon_color = Color(0, 0, 0, 1)
+sun_angle_max = 0.0
+
+[sub_resource type="Sky" id="Sky_4rkk8"]
+sky_material = SubResource("ProceduralSkyMaterial_fjc4o")
+
+[sub_resource type="Environment" id="Environment_7nun0"]
+background_mode = 1
+background_color = Color(0.00747204, 0.0108099, 0.0551852, 1)
+sky = SubResource("Sky_4rkk8")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_fjc4o"]
+emission_shape = 2
+emission_sphere_radius = 100.0
+direction = Vector3(0, 0, 0)
+gravity = Vector3(0, 0, 0)
+scale_min = 0.1
+scale_max = 5.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4rkk8"]
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_7nun0"]
+material = SubResource("StandardMaterial3D_4rkk8")
+radius = 0.05
+height = 0.1
+rings = 8
+
+[node name="SpaceEnvironment" type="Node3D" unique_id=1338858341]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1179216970]
+environment = SubResource("Environment_7nun0")
+
+[node name="Stars" type="GPUParticles3D" parent="." unique_id=917560167]
+visibility_range_end = 200.0
+amount = 300
+lifetime = 40.0
+process_material = SubResource("ParticleProcessMaterial_fjc4o")
+draw_pass_1 = SubResource("SphereMesh_7nun0")

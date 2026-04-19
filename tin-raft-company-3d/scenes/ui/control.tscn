@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://c8cucjdj88gfr"]
+
+[ext_resource type="Script" uid="uid://bmhrhasfvqsa2" path="res://scenes/ui/control.gd" id="1_5p55f"]
+
+[node name="Control" type="Control" unique_id=534936793]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5p55f")
+
+[node name="Panel" type="Panel" parent="." unique_id=199954310]
+layout_mode = 0
+offset_right = 328.0
+offset_bottom = 203.0
+
+[node name="Label" type="Label" parent="Panel" unique_id=1428648829]
+layout_mode = 0
+offset_left = 126.0
+offset_top = 70.0
+offset_right = 183.0
+offset_bottom = 93.0
+text = "сиськи"
+
+[node name="TextEdit" type="TextEdit" parent="Panel" unique_id=1697762115]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="CloseButton" type="Button" parent="Panel" unique_id=672094476]
+layout_mode = 0
+offset_left = 121.0
+offset_top = 101.0
+offset_right = 192.0
+offset_bottom = 132.0
+text = "трогать
+"
