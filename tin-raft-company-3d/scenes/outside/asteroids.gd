@@ -1,12 +1,15 @@
 extends Node3D
 
 @export var asteroid_scene: PackedScene
+
 @export var spawn_radius: float = 100.0
+
 @export var despawn_radius: float = 150.0
 @export var target_asteroid_count: int = 20
+@export var target_spread: float = 20.0
+
 @export var min_speed: float = 0.0
 @export var max_speed: float = 2.0
-@export var target_spread: float = 20.0
 
 var rng = RandomNumberGenerator.new()
 var current_asteroid_count: int = 0

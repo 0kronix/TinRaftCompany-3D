@@ -1,14 +1,18 @@
 extends RigidBody3D
 
-# Добавляем сигнал для уведомления о деспавне
 signal asteroid_despawned
 
 @export var min_rotation_speed: float = 0.5
 @export var max_rotation_speed: float = 3.0
+
 @export var min_speed: float = 0.0
 @export var max_speed: float = 2.0
+
 @export var target_spread: float = 20.0
 @export var despawn_distance: float = 150.0
+
+@export var min_scale: float = 0.5
+@export var max_scale: float = 2.0
 
 var direction: Vector3
 var current_speed: float
@@ -24,6 +28,7 @@ func _ready():
 	freeze = true
 	
 	_randomize_rotation()
+	_randomize_scale()
 	
 	call_deferred("_set_random_trajectory")
 
@@ -37,6 +42,12 @@ func _randomize_rotation():
 	
 	# Случайная скорость вращения
 	rotation_speed = randf_range(min_rotation_speed, max_rotation_speed)
+
+func _randomize_scale():
+	var scale_factor = randf_range(min_scale, max_scale)
+	scale = Vector3(scale_factor, scale_factor, scale_factor)
+	
+	mass = mass * scale_factor * scale_factor * scale_factor
 
 func _set_random_trajectory():
 	var target_pos = Vector3(
