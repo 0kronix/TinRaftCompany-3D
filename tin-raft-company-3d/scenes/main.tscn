@@ -8,6 +8,7 @@
 [node name="Main" type="Node3D" unique_id=1032035784]
 
 [node name="capsul" parent="." unique_id=495489639 instance=ExtResource("1_sugp2")]
+transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
 
 [node name="interactable_object" parent="capsul" unique_id=2042901232 instance=ExtResource("2_jyhfs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.99554586, -4.652519)
@@ -18,3 +19,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8194394, 1.9496758, 0)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
+
+[node name="Node2D" type="Node2D" parent="." unique_id=1373445916]
