@@ -1,4 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
+<<<<<<< Updated upstream
 ::res://::1776596317
 icon.svg::CompressedTexture2D::3022431252842749899::1776596055::1776596319::1::::<><><>0<>0<>c234136d425f3026100e282a2efc5a67<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
 ::res://scenes/::1776596055
@@ -16,3 +17,24 @@ control.gd::GDScript::3244182169124641619::1776596055::0::1::::<>Control<><>0<>0
 control.tscn::PackedScene::7094420352191416011::1776596055::0::1::::<><><>0<>0<><>::uid://bmhrhasfvqsa2::::res://scenes/ui/control.gd
 ::res://scripts/::1776596055
 ui_manager.gd::GDScript::2822675663290727587::1776596055::0::1::::<>Node<><>0<>0<><>::
+=======
+::res://::1776597810
+icon.svg::CompressedTexture2D::3022431252842749899::1776597773::1776597812::1::::<><><>0<>0<>c234136d425f3026100e282a2efc5a67<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
+::res://scenes/::1776597773
+main.tscn::PackedScene::6978438797554653501::1776597773::0::1::::<><><>0<>0<><>::uid://cqi7ifwvg413a::::res://scenes/inside/capsule.tscn<>uid://dk3npfd2tkanp::::res://scenes/inside/interactable_object.tscn<>uid://c8cucjdj88gfr::::res://scenes/ui/control.tscn<>uid://u3vox8u56g5u::::res://scenes/inside/player.tscn<>uid://d0v1j4nf11dcd::::res://scenes/inside/capsule_environment.tscn
+space.tscn::PackedScene::8348450567029220296::1776597773::0::1::::<><><>0<>0<><>::uid://cu60ibt14lncv::::res://scenes/outside/space_environment.tscn
+::res://scenes/inside/::1776597773
+capsule.tscn::PackedScene::5914335415312745096::1776597773::0::1::::<><><>0<>0<><>::
+capsule_environment.tscn::PackedScene::8958931332344999075::1776597773::0::1::::<><><>0<>0<><>::
+interactable_object.gd::GDScript::7633527856968184094::1776597773::0::1::::<>StaticBody3D<><>0<>0<><>::
+interactable_object.tscn::PackedScene::7919769440891542505::1776597773::0::1::::<><><>0<>0<><>::uid://dg00dalwl5h8a::::res://scenes/inside/interactable_object.gd
+player.gd::GDScript::6741927369999827799::1776597773::0::1::::<>CharacterBody3D<><>0<>0<><>::
+player.tscn::PackedScene::1462880767802709696::1776597773::0::1::::<><><>0<>0<><>::uid://c3b3s87epvbut::::res://scenes/inside/player.gd
+::res://scenes/outside/::1776597773
+space_environment.tscn::PackedScene::6242146244788259893::1776597773::0::1::::<><><>0<>0<><>::
+::res://scenes/ui/::1776597773
+control.gd::GDScript::3244182169124641619::1776597773::0::1::::<>Control<><>0<>0<><>::
+control.tscn::PackedScene::7094420352191416011::1776597773::0::1::::<><><>0<>0<><>::uid://bmhrhasfvqsa2::::res://scenes/ui/control.gd
+::res://scripts/::1776597773
+ui_manager.gd::GDScript::2822675663290727587::1776597773::0::1::::<>Node<><>0<>0<><>::
+>>>>>>> Stashed changes
