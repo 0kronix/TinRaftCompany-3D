@@ -19,5 +19,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.782021, 1.9496758, 0)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
-
-[node name="Node2D" type="Node2D" parent="." unique_id=1373445916]
