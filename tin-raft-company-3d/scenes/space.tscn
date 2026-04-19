@@ -11,4 +11,3 @@
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2066522236]
 transform = Transform3D(0.69088244, -0.52268153, 0.49948534, 0, 0.69088244, 0.72296715, -0.7229672, -0.49948528, 0.4773185, 12.032223, 13.628761, 11.808182)
-visible = false

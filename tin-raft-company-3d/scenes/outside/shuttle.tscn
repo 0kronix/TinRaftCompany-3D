@@ -1,19 +1,58 @@
 [gd_scene format=3 uid="uid://2qy1aqi2pnl4"]
 
 [ext_resource type="PackedScene" uid="uid://cpmkdj8jia3fb" path="res://models/lego_space/lego_classic_space_space_shuttle.glb" id="1_05w72"]
+[ext_resource type="Script" uid="uid://bq4407qir387m" path="res://scenes/outside/shuttle.gd" id="1_m07ae"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0u33h"]
 
 [node name="Shuttle" type="RigidBody3D" unique_id=639041244]
+gravity_scale = 0.0
+script = ExtResource("1_m07ae")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=460113761]
 transform = Transform3D(1.96, 0, 0, 0, 0.865, 0, 0, 0, 1.925, 0, 0.38980073, 0)
 shape = SubResource("BoxShape3D_0u33h")
-
-[node name="Marker3D" type="Marker3D" parent="." unique_id=1459869305]
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=2054614256]
 transform = Transform3D(1, 0, 0, 0, 0.9396927, 0.34202015, 0, -0.34202015, 0.9396927, 0, 1.350567, 2.166705)
 
 [node name="Sketchfab_Scene" parent="." unique_id=284207883 instance=ExtResource("1_05w72")]
 transform = Transform3D(-0.02, 0, -1.7484555e-09, 0, 0.02, 0, 1.7484555e-09, 0, -0.02, 0, 0, 0)
+
+[node name="Thrusters" type="Node3D" parent="." unique_id=267541220]
+
+[node name="Pitch_T1" type="Marker3D" parent="Thrusters" unique_id=1459869305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+
+[node name="Pitch_T2" type="Marker3D" parent="Thrusters" unique_id=1475372818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -1)
+
+[node name="Pitch_T3" type="Marker3D" parent="Thrusters" unique_id=729280594]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 1)
+
+[node name="Pitch_T4" type="Marker3D" parent="Thrusters" unique_id=909380240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="Yaw_T5" type="Marker3D" parent="Thrusters" unique_id=82831327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.4, -1)
+
+[node name="Yaw_T6" type="Marker3D" parent="Thrusters" unique_id=501441363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.4, 1)
+
+[node name="Yaw_T7" type="Marker3D" parent="Thrusters" unique_id=1344738293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.4, -1)
+
+[node name="Yaw_T8" type="Marker3D" parent="Thrusters" unique_id=897294449]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.4, 1)
+
+[node name="Roll_T9" type="Marker3D" parent="Thrusters" unique_id=586355601]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0)
+
+[node name="Roll_T10" type="Marker3D" parent="Thrusters" unique_id=619256789]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.8, 0)
+
+[node name="Roll_T11" type="Marker3D" parent="Thrusters" unique_id=317563389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+
+[node name="Roll_T12" type="Marker3D" parent="Thrusters" unique_id=1669251273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.8, 0)
