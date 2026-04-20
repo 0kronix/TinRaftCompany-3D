@@ -8,6 +8,8 @@
 [node name="Shuttle" type="RigidBody3D" unique_id=639041244]
 mass = 10.0
 gravity_scale = 0.0
+linear_damp_mode = 1
+angular_damp_mode = 1
 script = ExtResource("1_m07ae")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=460113761]

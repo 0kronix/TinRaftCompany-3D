@@ -5,7 +5,6 @@
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
-[ext_resource type="PackedScene" uid="uid://2oh7h6m5eq60" path="res://scenes/outside/asteroids.tscn" id="6_tefeu"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
 

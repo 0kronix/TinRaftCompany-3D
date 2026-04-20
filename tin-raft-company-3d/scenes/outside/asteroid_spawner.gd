@@ -1,59 +1,84 @@
 extends Node3D
 
-@export var asteroid_scene: PackedScene
+# Просто перетащите сюда все сцены предметов
+@export var item_scenes: Array[PackedScene] = []
 
-@export var spawn_radius: float = 100.0
-@export var despawn_radius: float = 150.0
+# Шансы спавна (по порядку, соответствуют item_scenes)
+@export var spawn_chances: Array[float] = []
 
-@export var target_asteroid_count: int = 20
+@export var spawn_radius: float = 200.0
+@export var despawn_radius: float = 210.0
+@export var target_count: int = 50
 @export var target_spread: float = 20.0
-
 @export var min_speed: float = 0.0
 @export var max_speed: float = 2.0
+@export var min_scale: float = 0.5
+@export var max_scale: float = 2.0
 
 var rng = RandomNumberGenerator.new()
-var current_asteroid_count: int = 0
+var current_count: int = 0
 
 func _ready():
 	rng.randomize()
+	await get_tree().process_frame
 	
-	for i in range(target_asteroid_count):
-		_spawn_asteroid()
-		await get_tree().create_timer(5.0).timeout
+	for i in range(target_count):
+		_spawn_item()
+		await get_tree().process_frame
 
-func _spawn_asteroid():
-	if asteroid_scene == null:
+func _pick_random_scene() -> PackedScene:
+	if item_scenes.is_empty():
+		return null
+	
+	# Суммируем все шансы
+	var total = 0.0
+	for c in spawn_chances:
+		total += c
+	
+	# Случайное число от 0 до total
+	var roll = rng.randf_range(0, total)
+	
+	# Ищем, какой предмет выпал
+	var current = 0.0
+	for i in range(item_scenes.size()):
+		current += spawn_chances[i]
+		if roll <= current:
+			return item_scenes[i]
+	
+	return item_scenes[0]
+
+func _spawn_item():
+	var scene = _pick_random_scene()
+	if scene == null:
 		return
 	
-	var asteroid = asteroid_scene.instantiate()
-	add_child(asteroid)
-	current_asteroid_count += 1
+	var item = scene.instantiate()
+	get_tree().current_scene.add_child(item)
+	current_count += 1
 	
-	# Подключаем сигнал деспавна
-	if asteroid.has_signal("asteroid_despawned"):
-		asteroid.asteroid_despawned.connect(_on_asteroid_despawned)
+	if item.has_signal("asteroid_despawned"):
+		item.asteroid_despawned.connect(_on_item_despawned)
 	
+	var center = global_position
 	var theta = rng.randf_range(0, 2 * PI)
 	var phi = rng.randf_range(0, PI)
 	
-	var x = spawn_radius * sin(phi) * cos(theta)
-	var y = spawn_radius * sin(phi) * sin(theta)
-	var z = spawn_radius * cos(phi)
+	item.global_position = Vector3(
+		center.x + spawn_radius * sin(phi) * cos(theta),
+		center.y + spawn_radius * sin(phi) * sin(theta),
+		center.z + spawn_radius * cos(phi)
+	)
 	
-	asteroid.global_position = Vector3(x, y, z)
-	
-	# Передаем параметры астероиду
-	asteroid.min_speed = min_speed
-	asteroid.max_speed = max_speed
-	asteroid.target_spread = target_spread
-	asteroid.despawn_distance = despawn_radius
-	
-func _on_asteroid_despawned():
-	current_asteroid_count -= 1
-	
-	_check_and_refill()
+	# Передаём параметры
+	item.min_speed = min_speed
+	item.max_speed = max_speed
+	item.target_spread = target_spread
+	item.despawn_distance = despawn_radius
+	item.min_scale = min_scale
+	item.max_scale = max_scale
+	item.set("spawner_center", self)
 
-func _check_and_refill():
-	while current_asteroid_count < target_asteroid_count:
-		_spawn_asteroid()
-		await get_tree().create_timer(5.0).timeout
+func _on_item_despawned():
+	current_count -= 1
+	if current_count < target_count:
+		_spawn_item()
