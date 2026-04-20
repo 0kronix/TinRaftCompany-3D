@@ -101,4 +101,4 @@ func _try_interact():
 	if ray.is_colliding():
 		var obj = ray.get_collider()
 		if obj.has_method("interact"):
-			obj.interact()
+			obj.interact(self)

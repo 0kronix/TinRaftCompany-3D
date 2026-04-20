@@ -18,6 +18,7 @@ extends RigidBody3D
 @export var explosion_force: float = 1.0
 # ---------------------------------------
 
+@export var dust_cloud_scene: PackedScene
 @export var debris_scene: PackedScene
 
 var direction: Vector3
@@ -80,15 +81,51 @@ func _physics_process(_delta):
 		return
 		
 # ВЗАИМОДЕЙСТВИЕ
-func interact():
+func interact(_player):
 	print("Asteroid destroyed!")
 	
-	# Создаём обломки
+	# Создаём обломки и частицы
+	_spawn_dust_cloud()
 	_spawn_debris()
 	
 	# Отправляем сигнал деспавна и удаляемся
 	despawned.emit()
 	queue_free()
+
+func _spawn_dust_cloud():
+	if dust_cloud_scene == null:
+		print("WARNING: dust_cloud_scene not assigned!")
+		return
+	
+	var dust = dust_cloud_scene.instantiate()
+	get_tree().current_scene.add_child(dust)
+	dust.global_position = global_position
+	
+	# Получаем текущий радиус астероида (среднее от scale)
+	var asteroid_radius = (scale.x + scale.y + scale.z) / 3.0
+	
+	# Рассчитываем количество частиц пропорционально объёму
+	var base_amount = 20
+	var amount_multiplier = asteroid_radius * asteroid_radius
+	dust.amount = int(base_amount * amount_multiplier)
+	
+	# Применяем радиус к системе частиц
+	if dust.process_material is ParticleProcessMaterial:
+		var mat = dust.process_material as ParticleProcessMaterial
+		mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		mat.emission_sphere_radius = asteroid_radius
+	
+	# Изменяем размер сферы в draw_pass_1
+	var mesh = dust.draw_pass_1
+	if mesh is SphereMesh:
+		var new_mesh = SphereMesh.new()
+		new_mesh.radius = asteroid_radius * 0.25  # Частицы меньше астероида
+		new_mesh.height = asteroid_radius * 0.5
+		new_mesh.material = mesh.material  # Сохраняем материал
+		dust.draw_pass_1 = new_mesh
+	
+	dust.emitting = true
+	dust.finished.connect(dust.queue_free)
 
 func _spawn_debris():
 	if debris_scene == null:
