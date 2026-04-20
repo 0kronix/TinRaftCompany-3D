@@ -5,6 +5,9 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ig110"]
 
 [node name="DebrisExample" type="RigidBody3D" unique_id=1392493037]
+mass = 0.05
+linear_damp_mode = 1
+angular_damp_mode = 1
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=825065888]
 mesh = SubResource("CapsuleMesh_oivf2")
