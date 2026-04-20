@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
+[ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
 
@@ -22,3 +23,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.782021, 1.9496758, 0)
 layer = 10
 
 [node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]
+
+[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.053438187, 0.8251114, 0.30529594)

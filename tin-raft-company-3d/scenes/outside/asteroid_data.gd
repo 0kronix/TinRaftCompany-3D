@@ -1,24 +1,32 @@
 extends RigidBody3D
 
-signal asteroid_despawned
-
+# Изменяемые значения -----------------
 @export var min_rotation_speed: float = 0.1
 @export var max_rotation_speed: float = 1.0
 
 @export var min_speed: float = 0.0
 @export var max_speed: float = 2.0
 
-@export var target_spread: float = 20.0
-@export var despawn_distance: float = 150.0
-
 @export var min_scale: float = 0.5
 @export var max_scale: float = 2.0
+
+@export var target_spread: float = 20.0
+@export var despawn_distance: float = 200.0
+
+# Настройки разрушения
+@export var debris_count: int = 3       
+@export var explosion_force: float = 1.0
+# ---------------------------------------
+
+@export var debris_scene: PackedScene
 
 var direction: Vector3
 var current_speed: float
 var rotation_axis: Vector3
 var rotation_speed: float
 var spawner_center: Node3D  # Ссылка на спавнер (цель)
+
+signal despawned
 
 func _ready():
 	gravity_scale = 0.0
@@ -67,6 +75,59 @@ func _physics_process(_delta):
 	
 	# Проверка удаления по расстоянию от центра
 	if global_position.distance_to(center) > despawn_distance:
-		asteroid_despawned.emit()
+		despawned.emit()
 		queue_free()
 		return
+		
+# ВЗАИМОДЕЙСТВИЕ
+func interact():
+	print("Asteroid destroyed!")
+	
+	# Создаём обломки
+	_spawn_debris()
+	
+	# Отправляем сигнал деспавна и удаляемся
+	despawned.emit()
+	queue_free()
+
+func _spawn_debris():
+	if debris_scene == null:
+		print("WARNING: debris_scene not assigned!")
+		return
+	
+	for i in range(debris_count):
+		var debris = debris_scene.instantiate()
+		get_tree().current_scene.add_child(debris)
+		
+		# Случайное смещение от центра астероида
+		var offset = Vector3(
+			randf_range(-1.0, 1.0),
+			randf_range(-1.0, 1.0),
+			randf_range(-1.0, 1.0)
+		)
+		
+		# Позиция обломка
+		debris.global_position = global_position + offset
+		
+		# Случайный размер
+		var s = randf_range(0.2, 0.5)
+		debris.scale = Vector3(s, s, s)
+		
+		if debris is RigidBody3D:
+			# Основной импульс от центра
+			debris.linear_velocity = direction * explosion_force
+			
+			# Добавляем немного случайности для естественности
+			var random_offset = Vector3(
+				randf_range(-0.5, 0.5),
+				randf_range(-0.5, 0.5),
+				randf_range(-0.5, 0.5)
+			)
+			debris.linear_velocity += random_offset
+			
+			# Случайное вращение
+			debris.angular_velocity = Vector3(
+				randf_range(-2.0, 2.0),
+				randf_range(-2.0, 2.0),
+				randf_range(-2.0, 2.0)
+			)
