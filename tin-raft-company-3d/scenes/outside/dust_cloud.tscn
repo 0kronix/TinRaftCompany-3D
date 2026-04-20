@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://d0kdqap1a8nlk"]
+
+[sub_resource type="Gradient" id="Gradient_giydc"]
+colors = PackedColorArray(0.2065543, 0.2065543, 0.20655426, 0.7529412, 0.09411765, 0.09411765, 0.09411765, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_1vtmn"]
+gradient = SubResource("Gradient_giydc")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_hvgcl"]
+emission_shape = 1
+emission_sphere_radius = 3.0
+spread = 180.0
+gravity = Vector3(0, 0, 0)
+damping_min = 10.0
+damping_max = 15.000001
+scale_min = 0.5
+scale_max = 1.5
+color_ramp = SubResource("GradientTexture1D_1vtmn")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p32id"]
+transparency = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.72130203, 0.72130215, 0.72130203, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_gaq67"]
+material = SubResource("StandardMaterial3D_p32id")
+radius = 0.2
+height = 0.4
+
+[node name="Dust" type="GPUParticles3D" unique_id=2147446316]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0, 0)
+emitting = false
+amount = 10
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_hvgcl")
+draw_pass_1 = SubResource("SphereMesh_gaq67")

@@ -1,16 +1,24 @@
 [gd_scene format=3 uid="uid://n3rgj6y7psm"]
 
-[ext_resource type="Script" uid="uid://comkav25ygdds" path="res://scenes/outside/asteroid.gd" id="1_nk6hq"]
+[ext_resource type="Script" uid="uid://comkav25ygdds" path="res://scenes/outside/asteroid_data.gd" id="1_nk6hq"]
 [ext_resource type="PackedScene" uid="uid://h1mcchse6edb" path="res://models/Asteroid.glb" id="2_gfbw6"]
+[ext_resource type="PackedScene" uid="uid://d0kdqap1a8nlk" path="res://scenes/outside/dust_cloud.tscn" id="2_iep08"]
+[ext_resource type="PackedScene" uid="uid://bkbrhikumht0p" path="res://scenes/outside/debris_piece.tscn" id="2_vsrt0"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vsrt0"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_iep08"]
 radius = 0.7596002
 
-[node name="RigidBody3D" type="RigidBody3D" unique_id=1177571950]
+[node name="Asteroid" type="RigidBody3D" unique_id=1177571950]
+top_level = true
+gravity_scale = 0.0
 can_sleep = false
+linear_damp_mode = 1
+angular_damp_mode = 1
 script = ExtResource("1_nk6hq")
+dust_cloud_scene = ExtResource("2_iep08")
+debris_scene = ExtResource("2_vsrt0")
 
 [node name="Asteroid" parent="." unique_id=1994692329 instance=ExtResource("2_gfbw6")]
 
