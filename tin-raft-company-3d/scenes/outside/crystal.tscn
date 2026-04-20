@@ -1,12 +1,13 @@
 [gd_scene format=3 uid="uid://by8h7p0ym1pwg"]
 
 [ext_resource type="Script" uid="uid://comkav25ygdds" path="res://scenes/outside/object.gd" id="1_gjejd"]
-[ext_resource type="PackedScene" uid="uid://h1mcchse6edb" path="res://models/Asteroid.glb" id="2_5hqba"]
+[ext_resource type="PackedScene" uid="uid://df0bnkh7ix3ft" path="res://models/Crystal Bowl.glb" id="2_gjejd"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vsrt0"]
+radius = 0.44979805
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_iep08"]
-radius = 0.7596002
+radius = 0.6694942
 
 [node name="Crystal" type="RigidBody3D" unique_id=1177571950]
 top_level = true
@@ -16,8 +17,8 @@ linear_damp_mode = 1
 angular_damp_mode = 1
 script = ExtResource("1_gjejd")
 
-[node name="Crystal" parent="." unique_id=1994692329 instance=ExtResource("2_5hqba")]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
+[node name="Root Scene" parent="." unique_id=409943353 instance=ExtResource("2_gjejd")]
+transform = Transform3D(3.5, 0, 0, 0, 3.5, 0, 0, 0, 3.5, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=39379419]
 shape = SubResource("SphereShape3D_vsrt0")
