@@ -2,8 +2,8 @@ extends RigidBody3D
 
 signal asteroid_despawned
 
-@export var min_rotation_speed: float = 0.5
-@export var max_rotation_speed: float = 3.0
+@export var min_rotation_speed: float = 0.0
+@export var max_rotation_speed: float = 1.5
 
 @export var min_speed: float = 0.0
 @export var max_speed: float = 2.0
@@ -20,13 +20,6 @@ var rotation_axis: Vector3
 var rotation_speed: float
 
 func _ready():
-	gravity_scale = 0.0
-	linear_damp = 0.0
-	angular_damp = 0.0
-	
-	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-	freeze = true
-	
 	_randomize_rotation()
 	_randomize_scale()
 	
@@ -42,6 +35,9 @@ func _randomize_rotation():
 	
 	# Случайная скорость вращения
 	rotation_speed = randf_range(min_rotation_speed, max_rotation_speed)
+	
+	# Применяем угловую скорость через физический движок
+	angular_velocity = rotation_axis * rotation_speed
 
 func _randomize_scale():
 	var scale_factor = randf_range(min_scale, max_scale)
@@ -59,18 +55,11 @@ func _set_random_trajectory():
 	direction = (target_pos - global_position).normalized()
 	current_speed = randf_range(min_speed, max_speed)
 	
-	# Вместо look_at() просто поворачиваем в направлении движения один раз
-	if direction.length() > 0:
-		look_at(global_position + direction, Vector3.UP)
+	# Используем линейную скорость физического движка
+	linear_velocity = direction * current_speed
 
-func _physics_process(delta):
-	# Проверка удаления
+func _physics_process(_delta):
 	if global_position.length() > despawn_distance:
-		asteroid_despawned.emit()  # Отправляем сигнал перед удалением
+		asteroid_despawned.emit()
 		queue_free()
 		return
-	
-	# Ручное перемещение (игнорируем физический движок)
-	global_position += direction * current_speed * delta
-	
-	rotate(rotation_axis, rotation_speed * delta)
