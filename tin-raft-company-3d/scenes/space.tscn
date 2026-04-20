@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://c15behmuw6jhs" path="res://scenes/outside/space_environment.tscn" id="1_rysn1"]
 [ext_resource type="PackedScene" uid="uid://2qy1aqi2pnl4" path="res://scenes/outside/shuttle.tscn" id="2_c6rj5"]
+[ext_resource type="PackedScene" uid="uid://2oh7h6m5eq60" path="res://scenes/outside/asteroids.tscn" id="3_dtwn4"]
 
 [node name="Space" type="Node3D" unique_id=1853528915]
 
@@ -11,3 +12,6 @@
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2066522236]
 transform = Transform3D(0.69088244, -0.52268153, 0.49948534, 0, 0.69088244, 0.72296715, -0.7229672, -0.49948528, 0.4773185, 12.032223, 13.628761, 11.808182)
+
+[node name="Asteroids" parent="." unique_id=1671113747 instance=ExtResource("3_dtwn4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.9100137)

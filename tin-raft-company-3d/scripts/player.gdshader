@@ -1,13 +1,13 @@
 shader_type canvas_item;
 
-uniform float grain_strength : hint_range(0.0, 1.0) = 0.01;
-uniform float vignette_strength : hint_range(0.0, 2.0) = 0.1;
+uniform float grain_strength : hint_range(0.0, 1.0) = 0.007;
+uniform float vignette_strength : hint_range(0.0, 2.0) = 0.05;
 uniform float vignette_size : hint_range(0.0, 1.0) = 0.3;
-uniform float aberration_strength : hint_range(0.0, 0.02) = 0.003;
+uniform float aberration_strength : hint_range(0.0, 0.02) = 0.002;
 uniform float scanline_strength : hint_range(0.0, 1.0) = 0.01;
 uniform float scanline_count : hint_range(100.0, 2000.0) = 600.0;
 uniform float brightness : hint_range(0.0, 2.0) = 0.95;
-uniform vec3 tint_color : source_color = vec3(0.91, 0.94, 0.8);
+uniform vec3 tint_color : source_color = vec3(0.95, 0.97, 0.91);
 
 uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear_mipmap;
 

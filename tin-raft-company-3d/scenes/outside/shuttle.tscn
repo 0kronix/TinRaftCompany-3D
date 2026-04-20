@@ -6,6 +6,7 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_0u33h"]
 
 [node name="Shuttle" type="RigidBody3D" unique_id=639041244]
+mass = 10.0
 gravity_scale = 0.0
 script = ExtResource("1_m07ae")
 
@@ -56,3 +57,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 
 [node name="Roll_T12" type="Marker3D" parent="Thrusters" unique_id=1669251273]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.8, 0)
+
+[node name="Main_Engine" type="Marker3D" parent="Thrusters" unique_id=469721578]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, 1)

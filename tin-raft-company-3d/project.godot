@@ -13,11 +13,18 @@ config_version=5
 config/name="Tin Raft Company 3D"
 run/main_scene="uid://c6on4q0ua0ayf"
 config/features=PackedStringArray("4.6", "Forward Plus")
-config/icon="res://icon.svg"
+
+[audio]
+
+buses/default_bus_layout=""
 
 [autoload]
 
 UIManager="*uid://bghlb5qh54vt8"
+
+[debug_draw_3d]
+
+settings/addon_root_folder="res://addons/debug_draw_3d"
 
 [display]
 

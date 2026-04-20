@@ -2,15 +2,16 @@ extends RigidBody3D
 
 # ── Настройки ──────────────────────────────────────────────
 @export var thruster_force: float = 0.1
+@export var main_thruster_force: float = 10.0  # Сила основного двигателя
 @export var debug_draw: bool = true
 @export var debug_force_scale: float = 0.05
 
 # ── Направления тяги (локальные координаты корабля) ────────
 const THRUSTER_DIRS: Dictionary = {
-	"Pitch_T1": Vector3(0, 1, 0),
-	"Pitch_T2": Vector3(0, -1, 0),
-	"Pitch_T3": Vector3(0, 1, 0),
-	"Pitch_T4": Vector3( 0, -1, 0),
+	"Pitch_T1": Vector3(0, -1, 0),
+	"Pitch_T2": Vector3(0, 1, 0),
+	"Pitch_T3": Vector3(0, -1, 0),
+	"Pitch_T4": Vector3( 0, 1, 0),
 	"Yaw_T5":   Vector3( 0, 0, 1),
 	"Yaw_T6":   Vector3( 0, 0, -1),
 	"Yaw_T7":   Vector3( 0, 0, 1),
@@ -35,20 +36,31 @@ const MANEUVER_THRUSTERS: Dictionary = {
 var _active_thrusters: Dictionary = {}
 var _thrusters: Dictionary = {}
 
+# ── Основной двигатель ─────────────────────────────────────
+var _main_thruster: Marker3D = null
+var _main_thruster_active: bool = false
+
 # ───────────────────────────────────────────────────────────
 func _ready() -> void:
 	# Собираем все Marker3D из группы Thrusters
 	for marker in $Thrusters.get_children():
 		if marker is Marker3D:
-			_thrusters[marker.name] = marker
-			_active_thrusters[marker.name] = false
-
+			if marker.name == "Main_Engine":
+				_main_thruster = marker
+			else:
+				_thrusters[marker.name] = marker
+				_active_thrusters[marker.name] = false
 
 
 func _physics_process(_delta: float) -> void:
 	# Сбрасываем активные двигатели
 	for key in _active_thrusters:
 		_active_thrusters[key] = false
+	_main_thruster_active = false
+
+	# ── Пробел — основной двигатель (вперёд) ───────────────
+	if Input.is_action_pressed("ui_select"):
+		_fire_main_engine()
 
 	# ── W / S — Pitch (нос вверх / вниз) ───────────────────
 	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
@@ -69,6 +81,22 @@ func _physics_process(_delta: float) -> void:
 		_fire_maneuver("roll_right")
 
 
+# ── Основной двигатель: толкает вперёд из центра кормы ─────
+func _fire_main_engine() -> void:
+	if _main_thruster == null:
+		push_warning("Main_Engine marker not found in Thrusters!")
+		return
+
+	# -Z — вперёд в локальных координатах Godot
+	var world_force: Vector3 = global_transform.basis * Vector3(0, 0, -1) * main_thruster_force
+
+	# Сила приложена из центра кормы — момент минимален
+	var offset: Vector3 = _main_thruster.global_position - global_position
+
+	apply_force(world_force, offset)
+	_main_thruster_active = true
+
+
 # ── Запускает группу двигателей по имени манёвра ───────────
 func _fire_maneuver(maneuver: String) -> void:
 	for thruster_name in MANEUVER_THRUSTERS[maneuver]:
@@ -84,14 +112,10 @@ func _apply_thruster(thruster_name: String, force: float) -> void:
 	var marker: Marker3D = _thrusters[thruster_name]
 	var local_dir: Vector3 = THRUSTER_DIRS[thruster_name]
 
-	# Переводим направление в мировые координаты
 	var world_force: Vector3 = global_transform.basis * (local_dir * force)
-
-	# Смещение от центра масс (не от origin!)
 	var offset: Vector3 = marker.global_position - global_position
 
 	apply_force(world_force, offset)
-
 	_active_thrusters[thruster_name] = true
 
 
@@ -100,6 +124,7 @@ func _process(_delta: float) -> void:
 	if not debug_draw:
 		return
 
+	# Маневровые двигатели
 	for thruster_name in _thrusters:
 		var marker: Marker3D = _thrusters[thruster_name]
 		var is_active: bool = _active_thrusters[thruster_name]
@@ -109,9 +134,16 @@ func _process(_delta: float) -> void:
 			var world_dir: Vector3 = global_transform.basis * local_dir
 			var start: Vector3 = marker.global_position
 			var end: Vector3 = start + world_dir * thruster_force * debug_force_scale
-
-			# Активный двигатель — ярко-оранжевый
 			DebugDraw3D.draw_arrow(start, end, Color.ORANGE_RED, 0.1, true)
 		else:
-			# Неактивный — серая точка
 			DebugDraw3D.draw_sphere(marker.global_position, 0.05, Color(0.4, 0.4, 0.4))
+
+	# Основной двигатель
+	if _main_thruster != null:
+		if _main_thruster_active:
+			var world_dir: Vector3 = global_transform.basis * Vector3(0, 0, -1)
+			var start: Vector3 = _main_thruster.global_position
+			var end: Vector3 = start + world_dir * main_thruster_force * debug_force_scale
+			DebugDraw3D.draw_arrow(start, end, Color.CYAN, 0.2, true)
+		else:
+			DebugDraw3D.draw_sphere(_main_thruster.global_position, 0.08, Color(0.2, 0.6, 0.8))
