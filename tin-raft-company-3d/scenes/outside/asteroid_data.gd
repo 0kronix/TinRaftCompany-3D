@@ -1,5 +1,7 @@
 extends RigidBody3D
 
+@onready var label = $RemoteTransform3D/Label3D
+
 # Изменяемые значения -----------------
 @export var min_rotation_speed: float = 0.1
 @export var max_rotation_speed: float = 1.0
@@ -171,3 +173,15 @@ func _spawn_debris():
 				randf_range(-2.0, 2.0),
 				randf_range(-2.0, 2.0)
 			)
+
+func show_hint():
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "modulate:a", 1.0, 0.15)
+	tween.tween_property(label, "outline_modulate:a", 1.0, 0.15)
+
+func hide_hint():
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "modulate:a", 0.0, 0.1)
+	tween.tween_property(label, "outline_modulate:a", 0.0, 0.1)

@@ -29,9 +29,10 @@ layer = 10
 
 [node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]
 
-[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.053438187, 0.8251114, -2.7772808)
-debris_scene = ExtResource("7_o6xl0")
-
 [node name="IronOre" parent="." unique_id=236560782 instance=ExtResource("7_o6xl0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.54915154)
+
+[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, 0)
+debris_count = 3
+debris_scene = ExtResource("7_o6xl0")

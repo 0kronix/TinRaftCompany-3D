@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://d0kdqap1a8nlk" path="res://scenes/outside/dust_cloud.tscn" id="2_iep08"]
 [ext_resource type="PackedScene" uid="uid://bkbrhikumht0p" path="res://scenes/outside/debris_piece.tscn" id="2_vsrt0"]
 [ext_resource type="ArrayMesh" uid="uid://dlq1ujjq70cd1" path="res://models/cobblestone_asteroid.tres" id="4_iep08"]
+[ext_resource type="Script" uid="uid://dcgwgwfhq6fv3" path="res://scenes/items/label_3d.gd" id="5_yb5ba"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vsrt0"]
 
@@ -30,3 +31,13 @@ shape = SubResource("SphereShape3D_vsrt0")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DespawnZone" unique_id=666871565]
 shape = SubResource("SphereShape3D_iep08")
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="." unique_id=459775527]
+remote_path = NodePath("..")
+update_rotation = false
+
+[node name="Label3D" type="Label3D" parent="RemoteTransform3D" unique_id=2087591188]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0.9762955, 0)
+billboard = 1
+text = "Press E to brake"
+script = ExtResource("5_yb5ba")
