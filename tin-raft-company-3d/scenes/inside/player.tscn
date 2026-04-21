@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://c3b3s87epvbut" path="res://scenes/inside/player.gd" id="1_3vyb7"]
 [ext_resource type="Script" uid="uid://suhxs75k8dwd" path="res://scenes/inside/head_bob.gd" id="2_7xktj"]
 [ext_resource type="Shader" uid="uid://p74mi4x6aj5k" path="res://scripts/player.gdshader" id="2_upfb8"]
+[ext_resource type="PackedScene" uid="uid://dpshmfvxmhjaa" path="res://scenes/ui/HotbarUI.tscn" id="4_2ag4j"]
+[ext_resource type="Script" uid="uid://xyyoiaowmjqt" path="res://scenes/ui/InventoryComponent.gd" id="5_2ag4j"]
+[ext_resource type="Script" uid="uid://dne5dya8miew6" path="res://scenes/ui/HotbarComponent.gd" id="5_kn1p2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g2els"]
 radius = 0.4
@@ -45,3 +48,11 @@ offset_right = 1920.0
 offset_bottom = 1080.0
 mouse_filter = 2
 color = Color(1, 1, 1, 0)
+
+[node name="HotbarUI" parent="CanvasLayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
+
+[node name="InventoryComponent" type="Node" parent="." unique_id=1694525340]
+script = ExtResource("5_2ag4j")
+
+[node name="HotbarComponent" type="Node" parent="." unique_id=1974257341]
+script = ExtResource("5_kn1p2")

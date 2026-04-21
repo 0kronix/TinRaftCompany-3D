@@ -2,7 +2,7 @@ extends RigidBody3D
 
 # ── Настройки ──────────────────────────────────────────────
 @export var thruster_force: float = 0.1
-@export var main_thruster_force: float = 10.0  # Сила основного двигателя
+@export var main_thruster_force: float = 5.0  # Сила основного двигателя
 @export var debug_draw: bool = true
 @export var debug_force_scale: float = 0.05
 
@@ -59,7 +59,7 @@ func _physics_process(_delta: float) -> void:
 	_main_thruster_active = false
 
 	# ── Пробел — основной двигатель (вперёд) ───────────────
-	if Input.is_action_pressed("ui_select"):
+	if Input.is_action_pressed("jump"):
 		_fire_main_engine()
 
 	# ── W / S — Pitch (нос вверх / вниз) ───────────────────

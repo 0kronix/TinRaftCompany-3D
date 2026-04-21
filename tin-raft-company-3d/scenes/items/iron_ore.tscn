@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://8u5fk8jtavok"]
+
+[ext_resource type="ArrayMesh" uid="uid://dlq1ujjq70cd1" path="res://models/cobblestone_asteroid.tres" id="1_8hsea"]
+[ext_resource type="Script" uid="uid://dtkbxeiyd1jdc" path="res://scenes/ui/WorldItem.gd" id="1_j8yur"]
+[ext_resource type="Resource" uid="uid://c1f4paancxs2e" path="res://scenes/items/iron_ore.tres" id="2_3gclu"]
+[ext_resource type="Script" uid="uid://dcgwgwfhq6fv3" path="res://scenes/items/label_3d.gd" id="4_3gclu"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_vfpv0"]
+
+[node name="IronOre" type="RigidBody3D" unique_id=236560782]
+mass = 0.1
+script = ExtResource("1_j8yur")
+item_data = ExtResource("2_3gclu")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=285320211]
+transform = Transform3D(0.305, 0, 0, 0, 0.305, 0, 0, 0, 0.305, 0, 0, 0)
+mesh = ExtResource("1_8hsea")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=991656045]
+transform = Transform3D(0.49, 0, 0, 0, 0.49, 0, 0, 0, 0.49, 0, 0, 0)
+shape = SubResource("SphereShape3D_vfpv0")
+
+[node name="Label3D" type="Label3D" parent="." unique_id=2129714519]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0.46027038, 0)
+top_level = true
+billboard = 1
+text = "Press E 
+Iron ore"
+script = ExtResource("4_3gclu")

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://n3rgj6y7psm"]
 
 [ext_resource type="Script" uid="uid://comkav25ygdds" path="res://scenes/outside/asteroid.gd" id="1_nk6hq"]
-[ext_resource type="PackedScene" uid="uid://h1mcchse6edb" path="res://models/Asteroid.glb" id="2_gfbw6"]
+[ext_resource type="ArrayMesh" uid="uid://dlq1ujjq70cd1" path="res://models/cobblestone_asteroid.tres" id="2_gfbw6"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vsrt0"]
 
@@ -9,10 +9,14 @@
 radius = 0.7596002
 
 [node name="RigidBody3D" type="RigidBody3D" unique_id=1177571950]
+top_level = true
 can_sleep = false
+linear_damp_mode = 1
+angular_damp_mode = 1
 script = ExtResource("1_nk6hq")
 
-[node name="Asteroid" parent="." unique_id=1994692329 instance=ExtResource("2_gfbw6")]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=376980044]
+mesh = ExtResource("2_gfbw6")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=39379419]
 shape = SubResource("SphereShape3D_vsrt0")

@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://5u61ec6vqipk"]
+
+[ext_resource type="Script" uid="uid://c50b6dvc3hreq" path="res://scenes/ui/hotbar_slot.gd" id="1_c2eey"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c2eey"]
+bg_color = Color(0.25882354, 0.25882354, 0.25882354, 0.7647059)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.12225228, 0.12225222, 0.12225223, 1)
+corner_detail = 1
+
+[node name="HotbarSlot" type="PanelContainer" unique_id=1040976297]
+custom_minimum_size = Vector2(100, 100)
+offset_right = 100.0
+offset_bottom = 46.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_c2eey")
+script = ExtResource("1_c2eey")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=260615925]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Icon" type="TextureRect" parent="MarginContainer" unique_id=1060174238]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+expand_mode = 5
+
+[node name="CountLabel" type="Label" parent="MarginContainer" unique_id=1511832970]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+theme_override_font_sizes/font_size = 24
