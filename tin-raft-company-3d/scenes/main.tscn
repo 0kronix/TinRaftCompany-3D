@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="6_tefeu"]
+[ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
 
@@ -54,3 +55,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
 
 [node name="IronOre9" parent="." unique_id=412946480 instance=ExtResource("6_tefeu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.053438187, 0.8251114, 0.30529594)

@@ -1,10 +1,11 @@
 [gd_scene format=3 uid="uid://2oh7h6m5eq60"]
 
-[ext_resource type="Script" uid="uid://37ontd4vkfni" path="res://scenes/outside/asteroids.gd" id="1_73uxd"]
+[ext_resource type="Script" uid="uid://37ontd4vkfni" path="res://scenes/outside/asteroid_spawner.gd" id="1_73uxd"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="2_74ng3"]
 
 [node name="Asteroids" type="Node3D" unique_id=1671113747]
 script = ExtResource("1_73uxd")
-asteroid_scene = ExtResource("2_74ng3")
+item_scenes = Array[PackedScene]([ExtResource("2_74ng3")])
+spawn_chances = Array[float]([100.0])
 
 [node name="Timer" type="Timer" parent="." unique_id=1783336258]
