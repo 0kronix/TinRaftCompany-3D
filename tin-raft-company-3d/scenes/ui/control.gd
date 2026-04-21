@@ -10,5 +10,5 @@ func close_ui():
 	queue_free()  # или hide()
 
 func _unhandled_input(event):
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("ui_close"):
 		close_ui()

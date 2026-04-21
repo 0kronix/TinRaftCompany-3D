@@ -20,7 +20,8 @@ script = ExtResource("1_nk6hq")
 dust_cloud_scene = ExtResource("2_iep08")
 debris_scene = ExtResource("2_vsrt0")
 
-[node name="Asteroid" parent="." unique_id=1994692329 instance=ExtResource("2_gfbw6")]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=376980044]
+mesh = ExtResource("2_gfbw6")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=39379419]
 shape = SubResource("SphereShape3D_vsrt0")

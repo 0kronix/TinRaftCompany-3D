@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemResource" format=3 uid="uid://c1f4paancxs2e"]
+
+[ext_resource type="PackedScene" uid="uid://2xc8irr7ki6n" path="res://models/iron_ore/minecraft_iron_ore.glb" id="1_k88kx"]
+[ext_resource type="Script" uid="uid://dqm87k1n0b77x" path="res://scenes/items/ItemResource.gd" id="1_qy57i"]
+[ext_resource type="Texture2D" uid="uid://bp0ing3f6osxx" path="res://arts/Diamond_Ore_(texture)_JE5_BE5.webp" id="1_teygu"]
+
+[resource]
+script = ExtResource("1_qy57i")
+id = "1"
+display_name = "Iron Ore"
+description = "Iron Ore"
+icon = ExtResource("1_teygu")
+model = ExtResource("1_k88kx")
+max_stack = 3
+metadata/_custom_type_script = "uid://dqm87k1n0b77x"

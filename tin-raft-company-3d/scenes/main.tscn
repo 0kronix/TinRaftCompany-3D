@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
+[ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="6_tefeu"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
@@ -13,7 +14,11 @@
 transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
 
 [node name="InteractableObject" parent="Border" unique_id=2042901232 instance=ExtResource("2_jyhfs")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.99554586, -4.652519)
+transform = Transform3D(0.84690994, -0.0007189749, -0.5317365, 0.0015534024, 0.99999845, 0.001122019, 0.53173465, -0.0017762488, 0.8469096, 4.4946065, 0.9833138, -4.6446953)
+ui_scene = ExtResource("3_jyhfs")
+
+[node name="InteractableObject2" parent="Border" unique_id=1092593932 instance=ExtResource("2_jyhfs")]
+transform = Transform3D(0.99960214, 6.141818e-05, 0.028235497, -5.924405e-05, 1.0000007, -7.7802455e-05, -0.028235521, 7.6098135e-05, 0.99960196, 0.2948803, 0.9944855, -4.7728643)
 ui_scene = ExtResource("3_jyhfs")
 
 [node name="Player" parent="." unique_id=914611990 instance=ExtResource("3_tbgi4")]
@@ -24,5 +29,31 @@ layer = 10
 
 [node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]
 
+[node name="IronOre" parent="." unique_id=236560782 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre2" parent="." unique_id=1594118525 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre3" parent="." unique_id=478171400 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre4" parent="." unique_id=1185102336 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre5" parent="." unique_id=193087950 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre6" parent="." unique_id=1722782159 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre7" parent="." unique_id=1607927295 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre8" parent="." unique_id=1179758561 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
+
+[node name="IronOre9" parent="." unique_id=412946480 instance=ExtResource("6_tefeu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0963691, -2.854278)
 [node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.053438187, 0.8251114, 0.30529594)

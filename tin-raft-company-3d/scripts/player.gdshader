@@ -1,6 +1,6 @@
 shader_type canvas_item;
 
-uniform float grain_strength : hint_range(0.0, 1.0) = 0.007;
+uniform float grain_strength : hint_range(0.0, 1.0) = 0.008;
 uniform float vignette_strength : hint_range(0.0, 2.0) = 0.05;
 uniform float vignette_size : hint_range(0.0, 1.0) = 0.3;
 uniform float aberration_strength : hint_range(0.0, 0.02) = 0.002;

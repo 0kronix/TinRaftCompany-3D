@@ -20,28 +20,41 @@ var fall_multiplier = 1.6       # быстрее падаем, чем подни
 # --- ВОЗДУХ ---
 var air_control = 0.3           # слабый контроль → ощущение массы
 
+var current_hovered = null
+var inventory_open := false
+
+
 func _ready():
 	# Захватить мышь при старте
 	add_to_group("player")
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
+
 func _unhandled_input(event):
-	# Вращение камеры мышью
+	# --- ИНВЕНТАРЬ ---
+	if event.is_action_pressed("inventory"):
+		toggle_inventory()
+		return
+
+	if event.is_action_pressed("ui_close") and inventory_open:
+		close_inventory()
+		return
+
+	# ❗ если инвентарь открыт — блокируем всё ниже
+	if inventory_open:
+		return
+
+	# --- ВРАЩЕНИЕ КАМЕРЫ ---
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
-		# Ограничить наклон головы вверх/вниз
 		head.rotation.x = clamp(head.rotation.x, -PI/2, PI/2)
 
-	# Взаимодействие
+	# --- ВЗАИМОДЕЙСТВИЕ ---
 	if event.is_action_pressed("interact"):
 		_try_interact()
 
 
-	# Выйти (освободить мышь)
-	if event.is_action_pressed("ui_cancel"):
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _physics_process(delta):
 	# --- ВВОД (WASD / стрелки) ---
@@ -92,13 +105,66 @@ func _physics_process(delta):
 			velocity.x *= 0.8  # Гасим скорость по X при резком развороте
 		if sign(direction.z) != sign(velocity.z):
 			velocity.z *= 0.8  # Гасим скорость по Z
-
+	
 	# --- ПРИМЕНЯЕМ ДВИЖЕНИЕ ---
 	move_and_slide()
+	_update_hover()
+
+
+func _update_hover():
+	if ray.is_colliding():
+		var obj = ray.get_collider()
+		
+		# Навели на новый объект
+		if obj != current_hovered:
+			# Скрыть у предыдущего
+			if current_hovered and current_hovered.has_method("hide_hint"):
+				current_hovered.hide_hint()
+			
+			# Показать у нового
+			if obj.has_method("show_hint"):
+				obj.show_hint()
+				current_hovered = obj
+			else:
+				current_hovered = null
+	else:
+		# Рейкаст ни во что не упирается
+		if current_hovered and current_hovered.has_method("hide_hint"):
+			current_hovered.hide_hint()
+		current_hovered = null
 
 
 func _try_interact():
 	if ray.is_colliding():
 		var obj = ray.get_collider()
-		if obj.has_method("interact"):
+		
+		while obj and not obj.has_method("interact"):
+			obj = obj.get_parent()
+		
+		if obj:
 			obj.interact(self)
+
+func toggle_inventory():
+	inventory_open = !inventory_open
+	
+	if inventory_open:
+		open_inventory()
+	else:
+		close_inventory()
+
+
+func open_inventory():
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+	var ui = get_node_or_null("CanvasLayer/InventoryUI")
+	if ui:
+		ui.visible = true
+
+
+func close_inventory():
+	inventory_open = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	var ui = get_node_or_null("CanvasLayer/InventoryUI")
+	if ui:
+		ui.visible = false

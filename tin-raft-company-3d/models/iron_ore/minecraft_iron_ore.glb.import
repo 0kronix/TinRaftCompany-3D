@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b2rauadntclxr"
-path="res://.godot/imported/craft_speederA.glb-382e1b5059fc11a23780bfd5b6e4ab5d.scn"
+uid="uid://2xc8irr7ki6n"
+path="res://.godot/imported/minecraft_iron_ore.glb-e72f16f5f46a88f68d9ac4aee59a0bc0.scn"
 
 [deps]
 
-source_file="res://models/craft_speederA.glb"
-dest_files=["res://.godot/imported/craft_speederA.glb-382e1b5059fc11a23780bfd5b6e4ab5d.scn"]
+source_file="res://models/iron_ore/minecraft_iron_ore.glb"
+dest_files=["res://.godot/imported/minecraft_iron_ore.glb-e72f16f5f46a88f68d9ac4aee59a0bc0.scn"]
 
 [params]
 

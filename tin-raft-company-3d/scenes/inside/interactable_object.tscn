@@ -22,3 +22,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_1cvqn")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1568699214]
 transform = Transform3D(1, 0, 0, 0, 2, 0, 0, 0, 0.5, 0, 0, 0)
 shape = SubResource("BoxShape3D_1t2qe")
+
+[node name="Label3D" type="Label3D" parent="." unique_id=1661156817]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2990316, 0)
+text = "Press E"
