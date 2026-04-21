@@ -11,9 +11,9 @@
 radius = 0.4
 height = 1.8
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_7xktj"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2ag4j"]
 shader = ExtResource("2_upfb8")
-shader_parameter/grain_strength = 0.007
+shader_parameter/grain_strength = 0.008
 shader_parameter/vignette_strength = 0.05
 shader_parameter/vignette_size = 0.3
 shader_parameter/aberration_strength = 0.002
@@ -21,6 +21,7 @@ shader_parameter/scanline_strength = 0.01
 shader_parameter/scanline_count = 600.0
 shader_parameter/brightness = 0.95
 shader_parameter/tint_color = Color(0.95, 0.97, 0.91, 1)
+shader_parameter/barrel_distortion = 0.05
 
 [node name="player" type="CharacterBody3D" unique_id=914611990 groups=["player"]]
 script = ExtResource("1_3vyb7")
@@ -43,9 +44,9 @@ target_position = Vector3(0, 0, -2.5)
 layer = 10
 
 [node name="ColorRect" type="ColorRect" parent="CanvasLayer" unique_id=206285741]
-material = SubResource("ShaderMaterial_7xktj")
-offset_right = 1920.0
-offset_bottom = 1080.0
+material = SubResource("ShaderMaterial_2ag4j")
+offset_right = 1600.0
+offset_bottom = 900.0
 mouse_filter = 2
 color = Color(1, 1, 1, 0)
 
