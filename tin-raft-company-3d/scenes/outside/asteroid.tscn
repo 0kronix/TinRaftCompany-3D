@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://n3rgj6y7psm"]
 
 [ext_resource type="Script" uid="uid://comkav25ygdds" path="res://scenes/outside/asteroid_data.gd" id="1_nk6hq"]
-[ext_resource type="PackedScene" uid="uid://h1mcchse6edb" path="res://models/Asteroid.glb" id="2_gfbw6"]
 [ext_resource type="PackedScene" uid="uid://d0kdqap1a8nlk" path="res://scenes/outside/dust_cloud.tscn" id="2_iep08"]
 [ext_resource type="PackedScene" uid="uid://bkbrhikumht0p" path="res://scenes/outside/debris_piece.tscn" id="2_vsrt0"]
+[ext_resource type="ArrayMesh" uid="uid://dlq1ujjq70cd1" path="res://models/cobblestone_asteroid.tres" id="4_iep08"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_vsrt0"]
 
@@ -21,7 +21,7 @@ dust_cloud_scene = ExtResource("2_iep08")
 debris_scene = ExtResource("2_vsrt0")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=376980044]
-mesh = ExtResource("2_gfbw6")
+mesh = ExtResource("4_iep08")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=39379419]
 shape = SubResource("SphereShape3D_vsrt0")

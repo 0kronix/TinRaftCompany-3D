@@ -20,9 +20,13 @@ mesh = ExtResource("1_8hsea")
 transform = Transform3D(0.49, 0, 0, 0, 0.49, 0, 0, 0, 0.49, 0, 0, 0)
 shape = SubResource("SphereShape3D_vfpv0")
 
-[node name="Label3D" type="Label3D" parent="." unique_id=2129714519]
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="." unique_id=218624203]
+remote_path = NodePath("..")
+update_rotation = false
+update_scale = false
+
+[node name="Label3D" type="Label3D" parent="RemoteTransform3D" unique_id=2129714519]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0.46027038, 0)
-top_level = true
 billboard = 1
 text = "Press E 
 Iron ore"

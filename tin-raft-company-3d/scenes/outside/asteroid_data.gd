@@ -16,6 +16,9 @@ extends RigidBody3D
 # Настройки разрушения
 @export var debris_count: int = 3       
 @export var explosion_force: float = 1.0
+
+@export var min_scale_debris: float = 0.5
+@export var max_scale_debris: float = 2.0
 # ---------------------------------------
 
 @export var dust_cloud_scene: PackedScene
@@ -147,7 +150,7 @@ func _spawn_debris():
 		debris.global_position = global_position + offset
 		
 		# Случайный размер
-		var s = randf_range(0.2, 0.5)
+		var s = randf_range(min_scale_debris, max_scale_debris)
 		debris.scale = Vector3(s, s, s)
 		
 		if debris is RigidBody3D:

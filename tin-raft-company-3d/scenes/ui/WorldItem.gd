@@ -3,7 +3,7 @@ extends RigidBody3D
 @export var item_data: ItemResource
 @export var count: int = 1
 
-@onready var label = $Label3D
+@onready var label = $RemoteTransform3D/Label3D
 
 func _ready():
 	label.modulate = Color(1, 1, 1, 0)
