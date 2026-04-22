@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c6md67isvucer"]
+
+[ext_resource type="Script" uid="uid://bcycyo4b8xy3t" path="res://scenes/ui/settings/components/settings_row.gd" id="1_gemtv"]
+
+[node name="SettingRow" type="HBoxContainer" unique_id=1504240436]
+script = ExtResource("1_gemtv")

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bf1f7riutvcon"]
+
+[ext_resource type="Script" uid="uid://y1njwyccqhhi" path="res://scenes/ui/settings/components/nav_button.gd" id="1_0v47n"]
+
+[node name="NavButton" type="Button" unique_id=1478732010]
+script = ExtResource("1_0v47n")

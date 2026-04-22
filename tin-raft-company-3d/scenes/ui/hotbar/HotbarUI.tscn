@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dpshmfvxmhjaa"]
 
-[ext_resource type="Script" uid="uid://b8k5mbsu1v7ap" path="res://scenes/ui/hotbar_ui.gd" id="1_6og64"]
+[ext_resource type="Script" uid="uid://b8k5mbsu1v7ap" path="res://scenes/ui/hotbar/hotbar_ui.gd" id="1_6og64"]
+
 
 [node name="HotbarUI" type="HBoxContainer" unique_id=938381524]
 anchors_preset = 7

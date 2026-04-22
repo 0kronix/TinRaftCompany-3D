@@ -13,6 +13,8 @@ func _ready():
 	set_active_slot(0)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_menu_open():
+		return
 	# цифровые клавиши 1–5
 	for i in range(hotbar_size):
 		if event.is_action_pressed("hotbar_%d" % (i + 1)):
@@ -40,3 +42,8 @@ func use_active_item() -> void:
 
 func _use_item(_item: ItemResource, _slot: int) -> void:
 	pass
+
+
+func _is_menu_open() -> bool:
+	var menu := get_tree().get_first_node_in_group("settings_menu")
+	return menu != null and menu.visible

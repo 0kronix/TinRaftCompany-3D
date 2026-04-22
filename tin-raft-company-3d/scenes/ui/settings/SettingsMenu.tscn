@@ -1,0 +1,97 @@
+[gd_scene format=3 uid="uid://dkgmnujsfm77t"]
+
+[ext_resource type="Script" uid="uid://j3gbpfu806bt" path="res://scenes/ui/settings/settings_menu.gd" id="1_4lnig"]
+[ext_resource type="PackedScene" uid="uid://bf1f7riutvcon" path="res://scenes/ui/settings/components/NavButton.tscn" id="2_87e6o"]
+[ext_resource type="PackedScene" uid="uid://pc5g8jyd524l" path="res://scenes/ui/settings/pages/PageSound.tscn" id="3_2dm26"]
+[ext_resource type="PackedScene" uid="uid://baxngh8r5aom3" path="res://scenes/ui/settings/pages/page_display.tscn" id="4_hf1k3"]
+[ext_resource type="PackedScene" uid="uid://dtcgm1ahfdu1m" path="res://scenes/ui/settings/pages/page_controls.tscn" id="5_pdccc"]
+[ext_resource type="PackedScene" uid="uid://bimklfel4d0mb" path="res://scenes/ui/settings/pages/page_network.tscn" id="6_m8nv0"]
+
+[node name="SettingsMenu" type="Control" unique_id=1081404846]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_4lnig")
+
+[node name="WindowPanel" type="PanelContainer" parent="." unique_id=489927117]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -29.5
+offset_top = -62.5
+offset_right = 29.5
+offset_bottom = 62.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WindowPanel" unique_id=1725933785]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1392294584]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WindowPanel/VBoxContainer/Header" unique_id=299615541]
+layout_mode = 2
+
+[node name="Tittle" type="Label" parent="WindowPanel/VBoxContainer/Header/VBoxContainer" unique_id=489083617]
+layout_mode = 2
+text = "Settings"
+
+[node name="StatusDot" type="ColorRect" parent="WindowPanel/VBoxContainer/Header" unique_id=1971569714]
+layout_mode = 2
+
+[node name="Body" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1021711881]
+layout_mode = 2
+
+[node name="SideBar" type="VBoxContainer" parent="WindowPanel/VBoxContainer/Body" unique_id=1758220908]
+layout_mode = 2
+
+[node name="NavButtonSound" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1478732010 instance=ExtResource("2_87e6o")]
+layout_mode = 2
+
+[node name="NavButtonDisplay" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1822924454 instance=ExtResource("2_87e6o")]
+layout_mode = 2
+
+[node name="NavButtonControls" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1261446844 instance=ExtResource("2_87e6o")]
+layout_mode = 2
+
+[node name="NavButtonNetwork" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1634790786 instance=ExtResource("2_87e6o")]
+layout_mode = 2
+
+[node name="ContentContainer" type="MarginContainer" parent="WindowPanel/VBoxContainer/Body" unique_id=561684710]
+layout_mode = 2
+
+[node name="PageStack" type="Control" parent="WindowPanel/VBoxContainer/Body/ContentContainer" unique_id=1908836983]
+layout_mode = 2
+
+[node name="PageSound" parent="WindowPanel/VBoxContainer/Body/ContentContainer/PageStack" unique_id=571582308 instance=ExtResource("3_2dm26")]
+layout_mode = 0
+
+[node name="PageDisplay" parent="WindowPanel/VBoxContainer/Body/ContentContainer/PageStack" unique_id=140099221 instance=ExtResource("4_hf1k3")]
+layout_mode = 0
+
+[node name="PageControls" parent="WindowPanel/VBoxContainer/Body/ContentContainer/PageStack" unique_id=757275355 instance=ExtResource("5_pdccc")]
+layout_mode = 0
+
+[node name="PageNetwork" parent="WindowPanel/VBoxContainer/Body/ContentContainer/PageStack" unique_id=795424898 instance=ExtResource("6_m8nv0")]
+layout_mode = 0
+
+[node name="Footer" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1459797354]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="WindowPanel/VBoxContainer/Footer" unique_id=1954408848]
+layout_mode = 2
+
+[node name="BtnReset" type="Button" parent="WindowPanel/VBoxContainer/Footer/HBoxContainer" unique_id=1234796485]
+layout_mode = 2
+text = "Reset"
+
+[node name="BtnApply" type="Button" parent="WindowPanel/VBoxContainer/Footer/HBoxContainer" unique_id=1493376207]
+layout_mode = 2
+text = "Apply"

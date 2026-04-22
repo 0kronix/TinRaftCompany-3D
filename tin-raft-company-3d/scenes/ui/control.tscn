@@ -11,12 +11,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_5p55f")
 
-[node name="Panel" type="Panel" parent="." unique_id=199954310]
-layout_mode = 0
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=353801587]
+layer = 10
+
+[node name="Panel" type="Panel" parent="CanvasLayer" unique_id=199954310]
 offset_right = 328.0
 offset_bottom = 203.0
 
-[node name="Label" type="Label" parent="Panel" unique_id=1428648829]
+[node name="Label" type="Label" parent="CanvasLayer/Panel" unique_id=1428648829]
 layout_mode = 0
 offset_left = 126.0
 offset_top = 70.0
@@ -24,12 +26,12 @@ offset_right = 183.0
 offset_bottom = 93.0
 text = "проверка"
 
-[node name="TextEdit" type="TextEdit" parent="Panel" unique_id=1697762115]
+[node name="TextEdit" type="TextEdit" parent="CanvasLayer/Panel" unique_id=1697762115]
 layout_mode = 0
 offset_right = 8.0
 offset_bottom = 8.0
 
-[node name="CloseButton" type="Button" parent="Panel" unique_id=672094476]
+[node name="CloseButton" type="Button" parent="CanvasLayer/Panel" unique_id=672094476]
 layout_mode = 0
 offset_left = 121.0
 offset_top = 101.0

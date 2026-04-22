@@ -9,12 +9,11 @@ func _ready() -> void:
 	inventory.inventory_changed.connect(_refresh)
 	hotbar.active_slot_changed.connect(_highlight)
 	_build_slots()
-	_refresh
 	inventory.ready_for_ui.connect(_refresh)
 
 func _build_slots():
 	for i in hotbar.hotbar_size:
-		var slot = preload("res://scenes/ui/HotbarSlot.tscn").instantiate()
+		var slot = preload("res://scenes/ui/hotbar/HotbarSlot.tscn").instantiate()
 		add_child(slot)
 
 		slot.slot_index = i

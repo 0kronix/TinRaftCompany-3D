@@ -3,9 +3,10 @@
 [ext_resource type="Script" uid="uid://c3b3s87epvbut" path="res://scenes/inside/player.gd" id="1_3vyb7"]
 [ext_resource type="Script" uid="uid://suhxs75k8dwd" path="res://scenes/inside/head_bob.gd" id="2_7xktj"]
 [ext_resource type="Shader" uid="uid://p74mi4x6aj5k" path="res://scripts/player.gdshader" id="2_upfb8"]
-[ext_resource type="PackedScene" uid="uid://dpshmfvxmhjaa" path="res://scenes/ui/HotbarUI.tscn" id="4_2ag4j"]
-[ext_resource type="Script" uid="uid://xyyoiaowmjqt" path="res://scenes/ui/InventoryComponent.gd" id="5_2ag4j"]
-[ext_resource type="Script" uid="uid://dne5dya8miew6" path="res://scenes/ui/HotbarComponent.gd" id="5_kn1p2"]
+[ext_resource type="PackedScene" uid="uid://dpshmfvxmhjaa" path="res://scenes/ui/hotbar/HotbarUI.tscn" id="4_2ag4j"]
+[ext_resource type="Script" uid="uid://xyyoiaowmjqt" path="res://scenes/ui/hotbar/InventoryComponent.gd" id="5_2ag4j"]
+[ext_resource type="Script" uid="uid://dne5dya8miew6" path="res://scenes/ui/hotbar/HotbarComponent.gd" id="5_kn1p2"]
+[ext_resource type="PackedScene" uid="uid://dkgmnujsfm77t" path="res://scenes/ui/settings/SettingsMenu.tscn" id="7_23gga"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g2els"]
 radius = 0.4
@@ -40,20 +41,28 @@ target_position = Vector3(0, 0, -2.5)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1668178610]
 
-[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1129661005]
-layer = 10
+[node name="ShaiderLayer" type="CanvasLayer" parent="." unique_id=1129661005]
+layer = 8
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer" unique_id=206285741]
+[node name="ColorRect" type="ColorRect" parent="ShaiderLayer" unique_id=206285741]
 material = SubResource("ShaderMaterial_2ag4j")
 offset_right = 1600.0
 offset_bottom = 900.0
 mouse_filter = 2
 color = Color(1, 1, 1, 0)
 
-[node name="HotbarUI" parent="CanvasLayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
+[node name="HotbarLayer" type="CanvasLayer" parent="." unique_id=1723359390]
+layer = 9
+
+[node name="HotbarUI" parent="HotbarLayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
 
 [node name="InventoryComponent" type="Node" parent="." unique_id=1694525340]
 script = ExtResource("5_2ag4j")
 
 [node name="HotbarComponent" type="Node" parent="." unique_id=1974257341]
 script = ExtResource("5_kn1p2")
+
+[node name="MenuLayer" type="CanvasLayer" parent="." unique_id=99744737]
+layer = 10
+
+[node name="SettingsMenu" parent="MenuLayer" unique_id=1081404846 instance=ExtResource("7_23gga")]

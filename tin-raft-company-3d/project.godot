@@ -16,11 +16,12 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 
 [audio]
 
-buses/default_bus_layout=""
+buses/default_bus_layout="uid://dxxyvc4ceh7ni"
 
 [autoload]
 
 UIManager="*uid://bghlb5qh54vt8"
+SettingsManager="*uid://bp1qg1u8t8iqu"
 
 [debug_draw_3d]
 

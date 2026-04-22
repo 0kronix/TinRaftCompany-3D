@@ -22,26 +22,30 @@ var air_control = 0.3           # слабый контроль → ощущен
 
 var current_hovered = null
 var inventory_open := false
+var menu_open := false
 
 
 func _ready():
 	# Захватить мышь при старте
+	close_menu()
 	add_to_group("player")
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 
 func _unhandled_input(event):
-	# --- ИНВЕНТАРЬ ---
+	if event.is_action_pressed("ui_close") and inventory_open:
+		close_inventory()
+		return
+	
+	if event.is_action_pressed("ui_close"):
+		toggle_menu()
+		return
+	
 	if event.is_action_pressed("inventory"):
 		toggle_inventory()
 		return
 
-	if event.is_action_pressed("ui_close") and inventory_open:
-		close_inventory()
-		return
-
-	# ❗ если инвентарь открыт — блокируем всё ниже
-	if inventory_open:
+	if inventory_open or menu_open:
 		return
 
 	# --- ВРАЩЕНИЕ КАМЕРЫ ---
@@ -57,6 +61,8 @@ func _unhandled_input(event):
 
 
 func _physics_process(delta):
+	if menu_open:
+		return
 	# --- ВВОД (WASD / стрелки) ---
 	var input_dir = Vector2(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
@@ -156,15 +162,31 @@ func toggle_inventory():
 func open_inventory():
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
-	var ui = get_node_or_null("CanvasLayer/InventoryUI")
-	if ui:
-		ui.visible = true
-
 
 func close_inventory():
 	inventory_open = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
-	var ui = get_node_or_null("CanvasLayer/InventoryUI")
+
+func toggle_menu():
+	menu_open = !menu_open
+	if menu_open:
+		open_menu()
+	else:
+		close_menu()
+
+func open_menu():
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	var ui = get_node_or_null("MenuLayer/SettingsMenu")
 	if ui:
-		ui.visible = false
+		ui.show_menu()
+
+func close_menu():
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	var ui = get_node_or_null("MenuLayer/SettingsMenu")
+	if ui:
+		ui.hide_menu()
+	
+	
+	
+	
