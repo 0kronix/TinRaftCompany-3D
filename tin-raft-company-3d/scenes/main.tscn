@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://b5voxs5c3fjrr" path="res://scripts/oxygen_system.gd" id="5_tipki"]
 [ext_resource type="Script" uid="uid://bmjw3avwahkjm" path="res://scripts/temperature_system.gd" id="6_85g3d"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
+[ext_resource type="Script" uid="uid://dj862wfbdip1d" path="res://scripts/health_system.gd" id="7_choun"]
 [ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="7_o6xl0"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
@@ -31,6 +32,9 @@ script = ExtResource("5_tipki")
 
 [node name="TemperatureSystem" type="Node" parent="Player" unique_id=2000210926]
 script = ExtResource("6_85g3d")
+
+[node name="HealthSystem" type="Node" parent="Player" unique_id=1882725833]
+script = ExtResource("7_choun")
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
