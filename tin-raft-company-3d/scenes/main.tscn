@@ -5,10 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
-[ext_resource type="Script" uid="uid://b5voxs5c3fjrr" path="res://scripts/oxygen_system.gd" id="5_tipki"]
-[ext_resource type="Script" uid="uid://bmjw3avwahkjm" path="res://scripts/temperature_system.gd" id="6_85g3d"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
-[ext_resource type="Script" uid="uid://dj862wfbdip1d" path="res://scripts/health_system.gd" id="7_choun"]
 [ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="7_o6xl0"]
 
 [node name="Inside" type="Node3D" unique_id=1032035784]
@@ -26,15 +23,6 @@ ui_scene = ExtResource("3_jyhfs")
 
 [node name="Player" parent="." unique_id=914611990 instance=ExtResource("3_tbgi4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6241784, 1.9496758, 1.9742017)
-
-[node name="OxygenSystem" type="Node" parent="Player" unique_id=1666746326]
-script = ExtResource("5_tipki")
-
-[node name="TemperatureSystem" type="Node" parent="Player" unique_id=2000210926]
-script = ExtResource("6_85g3d")
-
-[node name="HealthSystem" type="Node" parent="Player" unique_id=1882725833]
-script = ExtResource("7_choun")
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
