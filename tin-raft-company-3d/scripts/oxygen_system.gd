@@ -6,47 +6,42 @@ signal oxygen_depleted
 # Настройки
 @export var max_oxygen: float = 100.0
 @export var current_oxygen: float = 100.0
+
 @export var depletion_rate: float = 5.0
 @export var depletion_interval: float = 1.5
 
 # Состояние
 var is_consuming: bool = false
-var is_dead: bool = false
 var timer: Timer
 
 func _ready():
 	_setup_timer()
-	
 	current_oxygen = max_oxygen
 
 func _setup_timer():
 	timer = Timer.new()
+	timer.wait_time = depletion_interval
 	timer.timeout.connect(_on_timer_timeout)
 	add_child(timer)
 
-func _input(event):
-	if is_dead:
-		return
+func start_consumption(custom_rate: float = -1.0, custom_interval: float = -1.0):
+	if custom_rate > 0:
+		depletion_rate = custom_rate
+	if custom_interval > 0:
+		depletion_interval = custom_interval
+		timer.wait_time = depletion_interval
 	
-	if event.is_action_pressed("oxygen_toggle"):
-		toggle_oxygen_consumption()
-		return
+	is_consuming = true
+	timer.start()
+	print("Oxygen consumption started (rate: ", depletion_rate, ", interval: ", depletion_interval, ")")
 
-func toggle_oxygen_consumption():
-	if is_dead:
-		return
-	
-	is_consuming = !is_consuming
-	
-	if is_consuming:
-		timer.start()
-		print("Oxygen consumption started")
-	else:
-		timer.stop()
-		print("Oxygen consumption stopped")
+func stop_consumption():
+	is_consuming = false
+	timer.stop()
+	print("Oxygen consumption stopped")
 
 func _on_timer_timeout():
-	if not is_consuming or is_dead:
+	if not is_consuming:
 		return
 	
 	# Уменьшаем кислород
@@ -55,14 +50,20 @@ func _on_timer_timeout():
 	print("Oxygen: ", current_oxygen, "/", max_oxygen)
 	
 	# Проверяем на смерть
-	if current_oxygen <= 0 and not is_dead:
+	if current_oxygen <= 0:
 		_on_oxygen_depleted()
 
 func _on_oxygen_depleted():
-	is_dead = true
 	is_consuming = false
 	timer.stop()
 	
 	oxygen_depleted.emit()
 	
-	print("WASTED - Oxygen depleted!")
+	print("Oxygen depleted!")
+
+# Публичные методы
+func change_oxygen(amount: float):
+	current_oxygen = min(max_oxygen, current_oxygen + amount)
+
+func reset_oxygen():
+	current_oxygen = max_oxygen

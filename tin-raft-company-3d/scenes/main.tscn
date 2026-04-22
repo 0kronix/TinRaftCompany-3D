@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://u3vox8u56g5u" path="res://scenes/inside/player.tscn" id="3_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://d0v1j4nf11dcd" path="res://scenes/inside/capsule_environment.tscn" id="5_tbgi4"]
 [ext_resource type="Script" uid="uid://b5voxs5c3fjrr" path="res://scripts/oxygen_system.gd" id="5_tipki"]
+[ext_resource type="Script" uid="uid://bmjw3avwahkjm" path="res://scripts/temperature_system.gd" id="6_85g3d"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
 [ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="7_o6xl0"]
 
@@ -27,6 +28,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6241784, 1.9496758, 1.9742
 
 [node name="OxygenSystem" type="Node" parent="Player" unique_id=1666746326]
 script = ExtResource("5_tipki")
+
+[node name="TemperatureSystem" type="Node" parent="Player" unique_id=2000210926]
+script = ExtResource("6_85g3d")
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571 groups=["player"]]
 layer = 10
