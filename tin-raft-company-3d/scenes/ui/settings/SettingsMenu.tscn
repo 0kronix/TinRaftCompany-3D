@@ -54,15 +54,19 @@ layout_mode = 2
 
 [node name="NavButtonSound" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1478732010 instance=ExtResource("2_87e6o")]
 layout_mode = 2
+label_text = "Sound"
 
 [node name="NavButtonDisplay" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1822924454 instance=ExtResource("2_87e6o")]
 layout_mode = 2
+label_text = "Display"
 
 [node name="NavButtonControls" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1261446844 instance=ExtResource("2_87e6o")]
 layout_mode = 2
+label_text = "Controls"
 
 [node name="NavButtonNetwork" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1634790786 instance=ExtResource("2_87e6o")]
 layout_mode = 2
+label_text = "Network"
 
 [node name="ContentContainer" type="MarginContainer" parent="WindowPanel/VBoxContainer/Body" unique_id=561684710]
 layout_mode = 2

@@ -186,7 +186,3 @@ func close_menu():
 	var ui = get_node_or_null("MenuLayer/SettingsMenu")
 	if ui:
 		ui.hide_menu()
-	
-	
-	
-	

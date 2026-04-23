@@ -31,9 +31,9 @@ script = ExtResource("1_3vyb7")
 shape = SubResource("CapsuleShape3D_g2els")
 
 [node name="Head" type="Node3D" parent="." unique_id=1747099053]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Head" unique_id=516401202]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6204881, 0)
 script = ExtResource("2_7xktj")
 
 [node name="RayCast3D" type="RayCast3D" parent="Head/Camera3D" unique_id=760054251]
@@ -42,7 +42,7 @@ target_position = Vector3(0, 0, -2.5)
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1668178610]
 
 [node name="ShaiderLayer" type="CanvasLayer" parent="." unique_id=1129661005]
-layer = 8
+layer = 9
 
 [node name="ColorRect" type="ColorRect" parent="ShaiderLayer" unique_id=206285741]
 material = SubResource("ShaderMaterial_2ag4j")
@@ -52,7 +52,7 @@ mouse_filter = 2
 color = Color(1, 1, 1, 0)
 
 [node name="HotbarLayer" type="CanvasLayer" parent="." unique_id=1723359390]
-layer = 9
+layer = 10
 
 [node name="HotbarUI" parent="HotbarLayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
 
@@ -63,6 +63,6 @@ script = ExtResource("5_2ag4j")
 script = ExtResource("5_kn1p2")
 
 [node name="MenuLayer" type="CanvasLayer" parent="." unique_id=99744737]
-layer = 10
+layer = 11
 
 [node name="SettingsMenu" parent="MenuLayer" unique_id=1081404846 instance=ExtResource("7_23gga")]
