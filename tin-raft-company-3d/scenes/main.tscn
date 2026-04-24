@@ -29,7 +29,7 @@ layer = 10
 [node name="CapsuleEnvironment" parent="." unique_id=2084234321 instance=ExtResource("5_tbgi4")]
 
 [node name="IronOre" parent="." unique_id=236560782 instance=ExtResource("7_o6xl0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.54915154)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.6907731)
 
 [node name="IronOre2" parent="." unique_id=1568912382 instance=ExtResource("7_o6xl0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.802047, -0.6)
