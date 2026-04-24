@@ -36,6 +36,10 @@ func _ready() -> void:
 	# clients recreate dynamic nodes (debris) at the correct position.
 	world_spawner.spawn_function = _create_world_node
 
+	var nm := get_node_or_null("/root/NetworkManager")
+	if nm:
+		nm.player_left.connect(_on_player_left)
+
 	if multiplayer.is_server():
 		_spawn_player(1)
 	else:
@@ -59,10 +63,17 @@ func _create_world_node(data: Dictionary) -> Node:
 	if scene == null:
 		push_warning("world_manager: could not load scene: " + scene_path)
 		return null
-	var node      := scene.instantiate()
-	node.position  = data.get("position", Vector3.ZERO)
-	var s: float   = data.get("scale", 1.0)
-	node.scale     = Vector3(s, s, s)
+	var node     := scene.instantiate()
+	node.position = data.get("position", Vector3.ZERO)
+	var s: float  = data.get("scale", 1.0)
+	node.scale    = Vector3(s, s, s)
+	# Apply blast velocity for debris pieces. Setting linear_velocity before
+	# the node enters the tree is picked up by the physics server on entry.
+	# On authority (server) physics runs freely; clients are frozen by
+	# _setup_physics_sync() and follow the server via MultiplayerSynchronizer.
+	var velocity: Vector3 = data.get("velocity", Vector3.ZERO)
+	if velocity != Vector3.ZERO and node is RigidBody3D:
+		(node as RigidBody3D).linear_velocity = velocity
 	return node
 
 
@@ -104,3 +115,13 @@ func _spawn_player(peer_id: int) -> void:
 	player.name   = "Player_%d" % peer_id
 	player.position = spawn_pos
 	player_container.add_child(player, true)
+
+
+## Called when any peer disconnects. The server removes the player node;
+## MultiplayerSpawner replicates the despawn to all remaining clients.
+func _on_player_left(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var player_node := player_container.get_node_or_null("Player_%d" % peer_id)
+	if player_node and is_instance_valid(player_node):
+		player_node.queue_free()

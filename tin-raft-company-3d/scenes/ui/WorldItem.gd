@@ -6,10 +6,28 @@ extends RigidBody3D
 @onready var label = $RemoteTransform3D/Label3D
 
 func _ready() -> void:
-	# Freeze physics so the item sits still identically on all peers.
-	freeze = true
 	label.modulate         = Color(1, 1, 1, 0)
 	label.outline_modulate = Color(0, 0, 0, 0)
+	call_deferred("_setup_physics_sync")
+
+
+func _setup_physics_sync() -> void:
+	# Non-authority peers (clients) freeze physics; position is driven by the
+	# MultiplayerSynchronizer receiving updates from the server.
+	# In singleplayer is_multiplayer_authority() returns true → no freeze,
+	# full physics (gravity, collisions, pushable by player).
+	if not is_multiplayer_authority():
+		freeze      = true
+		freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+
+	var sync   := MultiplayerSynchronizer.new()
+	sync.name  = "PositionSync"
+	var config := SceneReplicationConfig.new()
+	config.add_property(NodePath(".:position"))
+	config.add_property(NodePath(".:rotation"))
+	sync.replication_config   = config
+	sync.replication_interval = 1.0 / 20.0
+	add_child(sync)
 
 
 func show_hint() -> void:
