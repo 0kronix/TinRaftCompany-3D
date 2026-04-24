@@ -45,7 +45,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, -2.1868458)
 debris_scene = ExtResource("7_o6xl0")
 
 [node name="Asteroid2" parent="." unique_id=62590085 instance=ExtResource("6_tefeu")]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 2.677394, 1.900154, 1.9179773)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.677394, 1.900154, 1.9179773)
 debris_scene = ExtResource("7_o6xl0")
 
 [node name="StatusPanel" parent="." unique_id=2042589497 instance=ExtResource("8_ip")]
