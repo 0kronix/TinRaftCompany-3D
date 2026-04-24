@@ -15,9 +15,16 @@ enum RowType { SLIDER, TOGGLE, SELECT, KEYBIND, INPUT_INT, INPUT_TEXT }
 var _control: Control
 
 func _ready() -> void:
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	custom_minimum_size.y = 42
+	alignment = BoxContainer.ALIGNMENT_BEGIN
+
 	var label_col := VBoxContainer.new()
+	label_col.custom_minimum_size.x = 280
 	var lbl := Label.new()
 	lbl.text = label_text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label_col.add_child(lbl)
 
 	if hint_text != "":
@@ -25,6 +32,8 @@ func _ready() -> void:
 		hint.text = hint_text
 		hint.add_theme_font_size_override("font_size", 10)
 		hint.modulate.a = 0.5
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label_col.add_child(hint)
 
 	add_child(label_col)
@@ -35,6 +44,7 @@ func _ready() -> void:
 	add_child(sp)
 
 	_control = _build_control()
+	_control.custom_minimum_size.x = 220
 	add_child(_control)
 
 func _build_control() -> Control:
@@ -46,7 +56,9 @@ func _build_control() -> Control:
 		RowType.SELECT:
 			return _build_select()
 		RowType.KEYBIND:
-			return KeybindButton.new()
+			var keybind := KeybindButton.new()
+			keybind.setting_key = setting_key
+			return keybind
 		RowType.INPUT_INT:
 			return _build_spinbox()
 		RowType.INPUT_TEXT:
@@ -55,15 +67,18 @@ func _build_control() -> Control:
 
 func _build_slider() -> HBoxContainer:
 	var slider_row := HBoxContainer.new()
+	slider_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var slider := HSlider.new()
 	slider.min_value = slider_min
 	slider.max_value = slider_max
 	slider.value = SettingsManager.data.get(setting_key, slider_max * 0.7)
-	slider.custom_minimum_size.x = 160
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.custom_minimum_size.x = 180
 
 	var val_label := Label.new()
 	val_label.text = str(int(slider.value)) + "%"
-	val_label.custom_minimum_size.x = 36
+	val_label.custom_minimum_size.x = 48
+	val_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	slider.value_changed.connect(func(v):
 		SettingsManager.data[setting_key] = v
@@ -76,11 +91,14 @@ func _build_slider() -> HBoxContainer:
 func _build_toggle() -> CheckButton:
 	var toggle := CheckButton.new()
 	toggle.button_pressed = SettingsManager.data.get(setting_key, false)
+	toggle.text = ""
+	toggle.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toggle.toggled.connect(func(v): SettingsManager.data[setting_key] = v)
 	return toggle
 
 func _build_select() -> OptionButton:
 	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for item in select_options:
 		opt.add_item(item)
 	opt.selected = SettingsManager.data.get(setting_key, 0)
@@ -91,6 +109,7 @@ func _build_spinbox() -> SpinBox:
 	var spin := SpinBox.new()
 	spin.min_value = 1024
 	spin.max_value = 65535
+	spin.custom_minimum_size.x = 180
 	spin.value = SettingsManager.data.get(setting_key, 7777)
 	spin.value_changed.connect(func(v): SettingsManager.data[setting_key] = int(v))
 	return spin
@@ -98,6 +117,7 @@ func _build_spinbox() -> SpinBox:
 func _build_lineedit() -> LineEdit:
 	var edit := LineEdit.new()
 	edit.text = SettingsManager.data.get(setting_key, "")
-	edit.custom_minimum_size.x = 160
+	edit.custom_minimum_size.x = 180
+	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	edit.text_changed.connect(func(v): SettingsManager.data[setting_key] = v)
 	return edit

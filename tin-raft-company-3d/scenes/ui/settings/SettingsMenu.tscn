@@ -23,56 +23,74 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -29.5
-offset_top = -62.5
-offset_right = 29.5
-offset_bottom = 62.5
+offset_left = -410.0
+offset_top = -280.0
+offset_right = 410.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="WindowPanel" unique_id=1725933785]
 layout_mode = 2
+theme_override_constants/separation = 14
 
 [node name="Header" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1392294584]
 layout_mode = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="WindowPanel/VBoxContainer/Header" unique_id=299615541]
 layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="Tittle" type="Label" parent="WindowPanel/VBoxContainer/Header/VBoxContainer" unique_id=489083617]
 layout_mode = 2
 text = "Settings"
 
 [node name="StatusDot" type="ColorRect" parent="WindowPanel/VBoxContainer/Header" unique_id=1971569714]
+custom_minimum_size = Vector2(10, 10)
 layout_mode = 2
+color = Color(0.19, 0.81, 0.55, 1)
 
 [node name="Body" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1021711881]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="SideBar" type="VBoxContainer" parent="WindowPanel/VBoxContainer/Body" unique_id=1758220908]
 layout_mode = 2
+theme_override_constants/separation = 8
 
 [node name="NavButtonSound" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1478732010 instance=ExtResource("2_87e6o")]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 label_text = "Sound"
 
 [node name="NavButtonDisplay" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1822924454 instance=ExtResource("2_87e6o")]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 label_text = "Display"
 
 [node name="NavButtonControls" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1261446844 instance=ExtResource("2_87e6o")]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 label_text = "Controls"
 
 [node name="NavButtonNetwork" parent="WindowPanel/VBoxContainer/Body/SideBar" unique_id=1634790786 instance=ExtResource("2_87e6o")]
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 label_text = "Network"
 
 [node name="ContentContainer" type="MarginContainer" parent="WindowPanel/VBoxContainer/Body" unique_id=561684710]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
 
 [node name="PageStack" type="Control" parent="WindowPanel/VBoxContainer/Body/ContentContainer" unique_id=1908836983]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="PageSound" parent="WindowPanel/VBoxContainer/Body/ContentContainer/PageStack" unique_id=571582308 instance=ExtResource("3_2dm26")]
 layout_mode = 0
@@ -89,13 +107,26 @@ layout_mode = 0
 [node name="Footer" type="HBoxContainer" parent="WindowPanel/VBoxContainer" unique_id=1459797354]
 layout_mode = 2
 
+[node name="BtnExitToMenu" type="Button" parent="WindowPanel/VBoxContainer/Footer" unique_id=1234796484]
+custom_minimum_size = Vector2(145, 38)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.5, 0.45, 1)
+text = "Exit to Lobby"
+
+[node name="FooterSpacer" type="Control" parent="WindowPanel/VBoxContainer/Footer" unique_id=1234796483]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="HBoxContainer" type="HBoxContainer" parent="WindowPanel/VBoxContainer/Footer" unique_id=1954408848]
 layout_mode = 2
+theme_override_constants/separation = 8
 
 [node name="BtnReset" type="Button" parent="WindowPanel/VBoxContainer/Footer/HBoxContainer" unique_id=1234796485]
+custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
 text = "Reset"
 
 [node name="BtnApply" type="Button" parent="WindowPanel/VBoxContainer/Footer/HBoxContainer" unique_id=1493376207]
+custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
 text = "Apply"

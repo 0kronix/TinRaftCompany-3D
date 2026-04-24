@@ -1,7 +1,10 @@
 # SettingsManager.gd
 extends Node
 
+signal settings_applied
+
 const SAVE_PATH := "user://settings.cfg"
+const SUPPORTED_LANGUAGES: PackedStringArray = ["ru", "en"]
 
 var data := {
 	# Звук
@@ -27,6 +30,7 @@ var data := {
 	"aberration":    30.0,
 	"vignette":      true,
 	"halluc_visual": true,
+	"language":      0,
 
 	# Управление
 	"mouse_sens":    0.003,
@@ -38,12 +42,13 @@ var data := {
 	"jump":      KEY_SPACE,
 	"interact":  KEY_E,
 	"inventory": KEY_TAB,
-	"slot1":     KEY_1,
-	"slot2":     KEY_2,
-	"slot3":     KEY_3,
-	"slot4":     KEY_4,
-	"slot5":     KEY_5,
-	"slot6":     KEY_6,
+	"hotbar_1":  KEY_1,
+	"hotbar_2":  KEY_2,
+	"hotbar_3":  KEY_3,
+	"hotbar_4":  KEY_4,
+	"hotbar_5":  KEY_5,
+	"hotbar_6":  KEY_6,
+	"key_radio": KEY_V,
 
 	# Сеть
 	"net_mode":      0,
@@ -64,15 +69,14 @@ var _defaults := {}
 func _ready() -> void:
 	_defaults = data.duplicate(true)
 	load_settings()
+	apply_all()
 
 func save() -> void:
 	var cfg := ConfigFile.new()
 	for key in data:
 		cfg.set_value("settings", key, data[key])
 	cfg.save(SAVE_PATH)
-	_apply_audio()
-	_apply_display()
-	_apply_keybinds()
+	apply_all()
 
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
@@ -85,31 +89,47 @@ func load_settings() -> void:
 func reset_to_defaults() -> void:
 	data = _defaults.duplicate(true)
 
+func apply_all() -> void:
+	_apply_audio()
+	_apply_display()
+	_apply_keybinds()
+	_apply_language()
+	_apply_network()
+	settings_applied.emit()
+
 func _apply_audio() -> void:
-	AudioServer.set_bus_volume_db(
-		AudioServer.get_bus_index("Master"),
-		linear_to_db(data["vol_master"] / 100.0)
-	)
-	AudioServer.set_bus_volume_db(
-		AudioServer.get_bus_index("Music"),
-		linear_to_db(data["vol_music"] / 100.0)
-	)
-	AudioServer.set_bus_volume_db(
-		AudioServer.get_bus_index("SFX"),
-		linear_to_db(data["vol_sfx"] / 100.0)
-	)
+	_apply_bus_volume_if_exists("Master", data["vol_master"] / 100.0)
+	_apply_bus_volume_if_exists("Music", data["vol_music"] / 100.0)
+	_apply_bus_volume_if_exists("SFX", data["vol_sfx"] / 100.0)
+	_apply_bus_volume_if_exists("Radio", data["vol_radio"] / 100.0)
+	_apply_bus_volume_if_exists("Static", data["vol_static"] / 100.0)
 
 func _apply_display() -> void:
 	var modes := [
-		DisplayServer.WINDOW_MODE_FULLSCREEN,
 		DisplayServer.WINDOW_MODE_WINDOWED,
-		DisplayServer.WINDOW_MODE_MAXIMIZED,
+		DisplayServer.WINDOW_MODE_FULLSCREEN,
+		DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN,
 	]
-	DisplayServer.window_set_mode(modes[data["window_mode"]])
+	var mode_index: int = clampi(int(data["window_mode"]), 0, modes.size() - 1)
+	DisplayServer.window_set_mode(modes[mode_index])
 
 	var vsync_mode := DisplayServer.VSYNC_ENABLED if data["vsync"] \
 					  else DisplayServer.VSYNC_DISABLED
 	DisplayServer.window_set_vsync_mode(vsync_mode)
+
+	var resolutions := [
+		Vector2i(1280, 720),
+		Vector2i(1920, 1080),
+		Vector2i(2560, 1440),
+		Vector2i(3840, 2160),
+	]
+	var resolution_index: int = clampi(int(data["resolution"]), 0, resolutions.size() - 1)
+	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
+		DisplayServer.window_set_size(resolutions[resolution_index])
+
+	var fps_map := [0, 60, 120, 144]
+	var fps_index: int = clampi(int(data["fps_limit"]), 0, fps_map.size() - 1)
+	Engine.max_fps = fps_map[fps_index]
 
 func _apply_keybinds() -> void:
 	var mapping := {
@@ -119,6 +139,14 @@ func _apply_keybinds() -> void:
 		"move_right":   "move_right",
 		"jump":         "jump",
 		"interact":     "interact",
+		"inventory":    "inventory",
+		"hotbar_1":     "hotbar_1",
+		"hotbar_2":     "hotbar_2",
+		"hotbar_3":     "hotbar_3",
+		"hotbar_4":     "hotbar_4",
+		"hotbar_5":     "hotbar_5",
+		"hotbar_6":     "hotbar_6",
+		"key_radio":    "key_radio",
 	}
 	for action in mapping.keys():
 		var setting_key: String = mapping[action]  # "key_forward" и т.д.
@@ -128,3 +156,36 @@ func _apply_keybinds() -> void:
 		var ev := InputEventKey.new()
 		ev.keycode = data[setting_key] as Key      # data["key_forward"] и т.д.
 		InputMap.action_add_event(action, ev)
+
+func _apply_language() -> void:
+	var language_index: int = clampi(int(data["language"]), 0, SUPPORTED_LANGUAGES.size() - 1)
+	TranslationServer.set_locale(SUPPORTED_LANGUAGES[language_index])
+
+func _apply_network() -> void:
+	var network_manager := get_node_or_null("/root/NetworkManager")
+	if network_manager and network_manager.has_method("apply_runtime_settings"):
+		network_manager.apply_runtime_settings({
+			"net_mode": data["net_mode"],
+			"port": data["port"],
+			"max_players": data["max_players"],
+			"voice_mode": data["voice_mode"],
+			"mic_threshold": data["mic_threshold"],
+			"noise_suppress": data["noise_suppress"],
+			"lobby_visible": data["lobby_visible"],
+			"lobby_name": data["lobby_name"],
+			"region": data["region"],
+			"show_ping": data["show_ping"],
+			"net_log": data["net_log"],
+		})
+
+func get_mouse_sensitivity() -> float:
+	return float(data.get("mouse_sens", 0.003))
+
+func is_mouse_inverted_y() -> bool:
+	return bool(data.get("invert_y", false))
+
+func _apply_bus_volume_if_exists(bus_name: String, linear_value: float) -> void:
+	var bus_index := AudioServer.get_bus_index(bus_name)
+	if bus_index == -1:
+		return
+	AudioServer.set_bus_volume_db(bus_index, linear_to_db(clampf(linear_value, 0.0001, 1.0)))

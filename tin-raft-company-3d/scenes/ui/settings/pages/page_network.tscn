@@ -3,12 +3,18 @@
 [ext_resource type="Script" uid="uid://vm2ubcgmmhib" path="res://scenes/ui/settings/pages/page_network.gd" id="1_l7lms"]
 
 [node name="PageNetwork" type="VBoxContainer" unique_id=795424898]
-offset_right = 40.0
-offset_bottom = 40.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_l7lms")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1622465539]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer" unique_id=1510888140]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10

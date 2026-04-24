@@ -26,12 +26,27 @@ func hide_hint():
 	tween.tween_property(label, "outline_modulate:a", 0.0, 0.1)
 
 func interact(_player):
-	print("=== interact вызван ===")
+	var command := build_interaction_command()
+	var network_manager := get_node_or_null("/root/NetworkManager")
+	if network_manager:
+		network_manager.request_command(_player, command)
+
+func build_interaction_command() -> Dictionary:
+	return {
+		"type": "open_interactable_ui",
+		"target_path": get_path()
+	}
+
+func server_validate_interaction(_actor: Node3D) -> bool:
+	return ui_scene != null
+
+func server_apply_interaction(_actor: Node3D) -> bool:
 	emit_signal("interacted")
-	print("ui_scene есть: ", ui_scene != null)
-	print("ui_scene: ", ui_scene)
 	if ui_scene:
-		print("вызываю UIManager...")
-		UIManager.show_ui(ui_scene)
-	else:
-		print("ui_scene ПУСТОЙ - назначь его в инспекторе!")
+		var services := get_node_or_null("/root/GameServices")
+		if services and services.interaction_service:
+			services.interaction_service.request_ui_open(ui_scene)
+		else:
+			UIManager.show_ui(ui_scene)
+		return true
+	return false

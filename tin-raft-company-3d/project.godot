@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Tin Raft Company 3D"
-run/main_scene="uid://c6on4q0ua0ayf"
+run/main_scene="res://scenes/network/lobby.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [audio]
@@ -20,8 +20,10 @@ buses/default_bus_layout="uid://dxxyvc4ceh7ni"
 
 [autoload]
 
-UIManager="*uid://bghlb5qh54vt8"
+UIManager="*res://autoload/ui_manager.gd"
 SettingsManager="*uid://bp1qg1u8t8iqu"
+GameServices="*res://autoload/game_services.gd"
+NetworkManager="*res://network/core/network_manager.gd"
 
 [debug_draw_3d]
 

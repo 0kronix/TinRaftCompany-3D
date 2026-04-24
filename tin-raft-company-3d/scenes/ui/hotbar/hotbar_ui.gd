@@ -1,7 +1,7 @@
 extends HBoxContainer
 
-@onready var inventory: InventoryComponent = get_tree().get_first_node_in_group("player").get_node("InventoryComponent")
-@onready var hotbar: HotbarComponent = get_tree().get_first_node_in_group("player").get_node("HotbarComponent")
+@onready var inventory: InventoryComponent = get_node("../../InventoryComponent")
+@onready var hotbar: HotbarComponent = get_node("../../HotbarComponent")
 
 var slot_nodes: Array[Control] = []
 

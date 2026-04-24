@@ -1,0 +1,74 @@
+---
+description: Godot multiplayer correctness and testing checklist for this project
+globs: tin-raft-company-3d/**/*.gd
+alwaysApply: false
+---
+
+# Godot Multiplayer — обязательные проверки
+
+## 1. Синхронные сигналы внутри вызываемой функции → двойной вызов
+
+Если функция A() эмитит сигнал, а обработчик сигнала делает `change_scene / queue_free`, управление возвращается в A() уже после освобождения ноды.
+
+```gdscript
+# ❌ ПЛОХО — signal_handler → change_scene_to_file уже изменил сцену,
+#            нода мертва, get_tree() == null
+func _on_host_pressed():
+    network_manager.host(port)   # host() эмитит session_started синхронно
+    get_tree().change_scene_to_file(SCENE)  # CRASH: node not in tree
+
+# ✅ ХОРОШО — один источник перехода сцены
+func _on_host_pressed():
+    network_manager.host(port)
+    # session_started → _on_session_started → change_scene_to_file
+```
+
+**Проверять:** любой `emit()` внутри функции → что происходит после emit в той же функции?
+
+## 2. Репликация уничтожения мировых объектов
+
+`queue_free()` на интерактивном объекте выполняется только локально. Без RPC другие пиры не знают.
+
+```gdscript
+# ❌ ПЛОХО — только локальный despawn
+func server_apply_interaction(_actor):
+    queue_free()
+
+# ✅ ХОРОШО — сначала уведомить NetworkManager, потом освободить
+func server_apply_interaction(_actor):
+    var nm := get_node_or_null("/root/NetworkManager")
+    if nm:
+        nm.notify_node_despawned(self)
+    queue_free()
+```
+
+**Проверять:** каждый `queue_free()` на объекте в игровой сцене → есть ли `notify_node_despawned`?
+
+## 3. RigidBody3D с randf → расхождение физики между пирами
+
+```gdscript
+# ❌ ПЛОХО — разные результаты на каждом пире
+func _ready():
+    linear_velocity = Vector3(randf(), randf(), randf())
+
+# ✅ ХОРОШО — единый seed на основе стабильного идентификатора
+func _ready():
+    seed(hash(str(get_path())))
+    linear_velocity = Vector3(randf(), randf(), randf())
+```
+
+**Проверять:** RigidBody3D с `randf_range` в `_ready` → добавлен ли детерминированный seed?
+
+## 4. Тестирование
+
+- **Промежуточные проверки** (парсинг, import): `Godot --headless --import`
+- **Финальная проверка UI и кнопок**: `browser-use` агент — нажимать кнопки, проверять переходы сцен
+- Headless запуск **не заменяет** интерактивный тест — он только проверяет parse errors
+
+## 5. Подключение server_disconnected
+
+При `join()` всегда подключать:
+```gdscript
+multiplayer.server_disconnected.connect(_on_server_disconnected)
+```
+Иначе клиент не узнает об отключении хоста.

@@ -3,12 +3,18 @@
 [ext_resource type="Script" uid="uid://ck4ui3on2feuo" path="res://scenes/ui/settings/pages/page_display.gd" id="1_36fwl"]
 
 [node name="PageDisplay" type="VBoxContainer" unique_id=140099221]
-offset_right = 40.0
-offset_bottom = 40.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_36fwl")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1332486867]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer" unique_id=258249378]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10

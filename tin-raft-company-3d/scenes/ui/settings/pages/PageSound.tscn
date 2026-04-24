@@ -3,10 +3,18 @@
 [ext_resource type="Script" uid="uid://butfdr8p3vnpl" path="res://scenes/ui/settings/pages/page_sound.gd" id="1_q247w"]
 
 [node name="PageSound" type="VBoxContainer" unique_id=571582308]
+size_flags_horizontal = 3
+size_flags_vertical = 3
 script = ExtResource("1_q247w")
 
 [node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1811118488]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer" unique_id=1347300055]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10

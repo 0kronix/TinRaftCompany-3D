@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/hud/capsule_status_hud.gd" id="1_0"]
+
+[node name="CapsuleStatusHUD" type="VBoxContainer"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 260.0
+offset_bottom = 140.0
+theme_override_constants/separation = 2
+script = ExtResource("1_0")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 2
+text = "Капсула"
+
+[node name="OxygenValue" type="Label" parent="."]
+layout_mode = 2
+text = "O2: 100.0%"
+
+[node name="PressureValue" type="Label" parent="."]
+layout_mode = 2
+text = "P: 100.0%"
+
+[node name="TemperatureValue" type="Label" parent="."]
+layout_mode = 2
+text = "T: 21.0C"
+
+[node name="PowerValue" type="Label" parent="."]
+layout_mode = 2
+text = "E: 100.0%"
+
+[node name="StatusValue" type="Label" parent="."]
+layout_mode = 2
+text = "Состояние: НОРМА"
