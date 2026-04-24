@@ -119,7 +119,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	# --- ВЗАИМОДЕЙСТВИЕ ---
 	if event.is_action_pressed("interact"):
 		_try_interact()
-
+	
+	# --- ГОЛОСОВОЙ ЧАТ (НОВОЕ) ---
+	if event.is_action_pressed("voice_ptt"):
+		VoiceManager.start_talking()
+	if event.is_action_released("voice_ptt"):
+		VoiceManager.stop_talking()
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
@@ -240,3 +245,4 @@ func _apply_control_settings() -> void:
 		return
 	mouse_sensitivity = SettingsManager.get_mouse_sensitivity()
 	invert_mouse_y    = SettingsManager.is_mouse_inverted_y()
+	
