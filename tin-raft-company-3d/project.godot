@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 [audio]
 
 buses/default_bus_layout="uid://dxxyvc4ceh7ni"
+driver/enable_input=true
 driver/mix_rate=48000
 
 [autoload]
