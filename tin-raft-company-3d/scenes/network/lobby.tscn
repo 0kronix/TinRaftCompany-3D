@@ -28,8 +28,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="Center" unique_id=705936976]
-custom_minimum_size = Vector2(440, 0)
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(480, 0)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
 layout_mode = 2
 
 [node name="VBox" type="VBoxContainer" parent="Center/Panel" unique_id=2097961312]
@@ -49,7 +51,16 @@ theme_override_font_sizes/font_size = 13
 text = "Мультиплеер — Локальная сеть"
 horizontal_alignment = 1
 
-[node name="Spacer1" type="Control" parent="Center/Panel/VBox" unique_id=1000569094]
+[node name="MyIPsLabel" type="Label" parent="Center/Panel/VBox"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.45, 0.75, 0.55, 1)
+
+[node name="Spacer1" type="Control" parent="Center/Panel/VBox"]
+layout_mode = 2
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 

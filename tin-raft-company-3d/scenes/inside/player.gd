@@ -47,6 +47,7 @@ var inventory_open  := false
 var menu_open       := false
 var mouse_sensitivity: float = DEFAULT_MOUSE_SENSITIVITY
 var invert_mouse_y: bool     = false
+var _ping_label: Label = null
 
 
 func _ready() -> void:
@@ -69,6 +70,7 @@ func _setup_local_player() -> void:
 	var body_mesh := get_node_or_null("BodyMesh")
 	if body_mesh:
 		body_mesh.visible = false
+	_setup_ping_display()
 
 
 ## Called for all other players — they are puppets driven by MultiplayerSynchronizer.
@@ -166,6 +168,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_hover() -> void:
+	# Clear stale reference if the object was freed (e.g. picked up by another player).
+	if current_hovered != null and not is_instance_valid(current_hovered):
+		current_hovered = null
+
 	if ray.is_colliding():
 		var obj = ray.get_collider()
 		if obj != current_hovered:
@@ -245,4 +251,65 @@ func _apply_control_settings() -> void:
 		return
 	mouse_sensitivity = SettingsManager.get_mouse_sensitivity()
 	invert_mouse_y    = SettingsManager.is_mouse_inverted_y()
-	
+
+
+func _setup_ping_display() -> void:
+	var hud_layer := get_node_or_null("HotbarLayer") as CanvasLayer
+	if hud_layer == null:
+		return
+	_ping_label = Label.new()
+	_ping_label.name = "PingLabel"
+	_ping_label.anchor_left   = 1.0
+	_ping_label.anchor_right  = 1.0
+	_ping_label.anchor_top    = 0.0
+	_ping_label.anchor_bottom = 0.0
+	_ping_label.offset_left   = -110.0
+	_ping_label.offset_right  = -10.0
+	_ping_label.offset_top    = 10.0
+	_ping_label.offset_bottom = 34.0
+	_ping_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ping_label.add_theme_font_size_override("font_size", 13)
+	_ping_label.add_theme_color_override("font_color", Color(0.8, 1.0, 0.8))
+	_ping_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_ping_label.add_theme_constant_override("shadow_offset_x", 1)
+	_ping_label.add_theme_constant_override("shadow_offset_y", 1)
+	hud_layer.add_child(_ping_label)
+	_update_ping()
+	var timer := Timer.new()
+	timer.wait_time = 1.0
+	timer.autostart = true
+	timer.timeout.connect(_update_ping)
+	add_child(timer)
+
+
+func _update_ping() -> void:
+	if _ping_label == null or not is_instance_valid(_ping_label):
+		return
+	var show_ping: bool = SettingsManager.data.get("show_ping", false)
+	if not show_ping:
+		_ping_label.visible = false
+		return
+	_ping_label.visible = true
+	var mp_peer := multiplayer.multiplayer_peer
+	if mp_peer == null or mp_peer is OfflineMultiplayerPeer:
+		_ping_label.text = ""
+		return
+	if multiplayer.is_server():
+		_ping_label.text = "HOST"
+		return
+	var enet_peer := mp_peer as ENetMultiplayerPeer
+	if enet_peer == null:
+		return
+	var server_conn := enet_peer.get_peer(1)
+	if server_conn == null:
+		return
+	var rtt: int = roundi(server_conn.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME))
+	var color: Color
+	if rtt < 60:
+		color = Color(0.4, 1.0, 0.4)
+	elif rtt < 120:
+		color = Color(1.0, 1.0, 0.3)
+	else:
+		color = Color(1.0, 0.3, 0.3)
+	_ping_label.add_theme_color_override("font_color", color)
+	_ping_label.text = "%d ms" % rtt

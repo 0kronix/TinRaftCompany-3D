@@ -196,12 +196,15 @@ func _spawn_debris() -> void:
 			randf_range(-1.0, 1.0)
 		)
 		var s := randf_range(min_scale_debris, max_scale_debris)
+		var blast_dir := (offset + Vector3(randf_range(-0.5, 0.5), randf_range(-0.5, 0.5), randf_range(-0.5, 0.5))).normalized()
+		var velocity  := blast_dir * explosion_force * randf_range(2.0, 5.0)
 
 		if spawner != null:
 			spawner.spawn({
 				"scene_path": debris_scene.resource_path,
 				"position":   position + offset,
 				"scale":      s,
+				"velocity":   velocity,
 			})
 		else:
 			# Singleplayer fallback — no spawner configured yet.
@@ -209,6 +212,8 @@ func _spawn_debris() -> void:
 			debris.position = position + offset
 			debris.scale    = Vector3(s, s, s)
 			world_objects.add_child(debris, true)
+			if debris is RigidBody3D:
+				(debris as RigidBody3D).linear_velocity = velocity
 
 
 func show_hint() -> void:

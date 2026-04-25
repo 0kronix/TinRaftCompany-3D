@@ -2,16 +2,22 @@ extends Control
 
 const GAME_SCENE := "res://scenes/main.tscn"
 
-@onready var ip_input: LineEdit = $Center/Panel/VBox/IPInput
-@onready var port_label: Label = $Center/Panel/VBox/PortLabel
-@onready var btn_host: Button = $Center/Panel/VBox/BtnHost
-@onready var btn_join: Button = $Center/Panel/VBox/BtnJoin
-@onready var btn_solo: Button = $Center/Panel/VBox/BtnSolo
-@onready var status_label: Label = $Center/Panel/VBox/StatusLabel
+@onready var ip_input:    LineEdit = $Center/Panel/VBox/IPInput
+@onready var port_label:  Label    = $Center/Panel/VBox/PortLabel
+@onready var btn_host:    Button   = $Center/Panel/VBox/BtnHost
+@onready var btn_join:    Button   = $Center/Panel/VBox/BtnJoin
+@onready var btn_solo:    Button   = $Center/Panel/VBox/BtnSolo
+@onready var status_label: Label   = $Center/Panel/VBox/StatusLabel
+@onready var my_ips_label: Label   = $Center/Panel/VBox/MyIPsLabel
 
 var _network_manager: Node = null
+var _connect_timer: SceneTreeTimer = null
 
 func _ready() -> void:
+	# Always release the mouse when the lobby opens — it may have been captured
+	# during gameplay (MOUSE_MODE_CAPTURED prevents clicking/typing in UI).
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
 	_network_manager = get_node_or_null("/root/NetworkManager")
 
 	var port: int = int(SettingsManager.data.get("port", 7777))
@@ -25,6 +31,7 @@ func _ready() -> void:
 		_network_manager.session_started.connect(_on_session_started)
 		_network_manager.connection_failed.connect(_on_connection_failed)
 
+	_show_local_ips()
 	_apply_style()
 
 func _on_host_pressed() -> void:
@@ -54,15 +61,32 @@ func _on_join_pressed() -> void:
 	_set_buttons_enabled(false)
 	_set_status(_t("Подключение к ", "Connecting to ") + ip + "...", false)
 
+	# Auto-cancel if no response within 10 seconds.
+	_connect_timer = get_tree().create_timer(10.0)
+	_connect_timer.timeout.connect(_on_connect_timeout)
+
 func _on_solo_pressed() -> void:
 	get_tree().change_scene_to_file(GAME_SCENE)
 
 func _on_session_started(_is_host: bool) -> void:
+	_connect_timer = null
 	_set_status(_t("Подключено. Загрузка...", "Connected. Loading..."), false)
 	get_tree().change_scene_to_file(GAME_SCENE)
 
 func _on_connection_failed() -> void:
+	_connect_timer = null
 	_set_status(_t("Не удалось подключиться", "Connection failed"), true)
+	_set_buttons_enabled(true)
+
+
+func _on_connect_timeout() -> void:
+	_connect_timer = null
+	if _network_manager:
+		_network_manager.leave()
+	_set_status(_t(
+		"Нет ответа от сервера (проверьте IP, порт и брандмауэр)",
+		"No response from server (check IP, port and firewall)"
+	), true)
 	_set_buttons_enabled(true)
 
 func _set_status(text: String, is_error: bool) -> void:
@@ -73,6 +97,20 @@ func _set_buttons_enabled(enabled: bool) -> void:
 	btn_host.disabled = not enabled
 	btn_join.disabled = not enabled
 	btn_solo.disabled = not enabled
+
+func _show_local_ips() -> void:
+	var lines: PackedStringArray = []
+	for iface: Dictionary in IP.get_local_interfaces():
+		var iface_name: String = iface.get("name", "?")
+		for addr: String in iface.get("addresses", []):
+			# Show only IPv4, skip loopback.
+			if "." in addr and not addr.begins_with("127."):
+				lines.append("%s  →  %s" % [iface_name, addr])
+	if lines.is_empty():
+		my_ips_label.text = _t("Нет сетевых интерфейсов", "No network interfaces found")
+	else:
+		my_ips_label.text = _t("Ваши IP-адреса:\n", "Your IP addresses:\n") + "\n".join(lines)
+
 
 func _t(ru: String, en: String) -> String:
 	return ru if TranslationServer.get_locale().begins_with("ru") else en
