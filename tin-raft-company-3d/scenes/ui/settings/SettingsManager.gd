@@ -21,10 +21,10 @@ var data := {
 	"output_device": 0,
 	"mic_device":    0,
 	
-	# Голос
+	# Голосовой чат
 	"voice_mode":      0,     # 0 = PTT, 1 = VOX
 	"voice_volume":    80.0,  # общая громкость голоса (0–100 %)
-	"mic_threshold":   20.0,  # порог активации для VOX (уже есть, но используем)
+	"mic_threshold":   20.0,  # порог активации для VOX
 	"voice_ptt_key":   KEY_V, # клавиша Push-to-Talk
 	"voice_mute_key":  KEY_M, # клавиша полного отключения микрофона
 

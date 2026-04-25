@@ -24,7 +24,11 @@ func _build() -> void:
 	_add_row(_t("Клавиша PTT", "PTT key"), "", "voice_ptt_key", SettingRow.RowType.KEYBIND)
 	_add_row(_t("Клавиша Mute", "Mute key"), "", "voice_mute_key", SettingRow.RowType.KEYBIND)
 	_add_row(_t("Громкость голоса", "Voice volume"), "", "voice_volume", SettingRow.RowType.SLIDER)
-	_add_row(_t("Порог VOX", "VOX threshold"), "", "mic_threshold", SettingRow.RowType.SLIDER, 0.5, 30.0)
+	
+	var threshold_bar: Control = load("res://scenes/ui/settings/components/VoiceThresholdBar.gd").new()
+	threshold_bar.name = "ThresholdBar"
+	threshold_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(threshold_bar)
 
 	_add_player_volumes_section()
 
@@ -64,7 +68,6 @@ func _add_player_volumes_section() -> void:
 		content.add_child(_voice_players_container)
 
 		var vm := get_node_or_null("/root/VoiceManager")
-		print("VoiceManager found: ", vm != null)
 		if vm:
 			if not vm.voice_player_added.is_connected(_on_voice_player_added):
 				vm.voice_player_added.connect(_on_voice_player_added.bind(_voice_players_container))

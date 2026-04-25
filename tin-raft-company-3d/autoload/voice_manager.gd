@@ -8,14 +8,17 @@ const OPUS_CHANNELS     := 2
 const OPUS_CHUNK_SIZE   := 480
 const OPUS_BITRATE      := 64000
 const OPUS_COMPLEXITY   := 5
-
 var opus_encoder: TwovoipOpusEncoder
+
 var cached_mode := 0
 var cached_threshold := 0.5
 var cached_voice_volume := 80.0
+var current_mic_level := 0.0
+
 var muted := false
 var is_transmitting := false
 var ptt_active := false
+
 var vox_timer := 0.0
 const VOX_HOLD_TIME := 0.3
 
@@ -73,27 +76,29 @@ func _process(delta: float) -> void:
 		return
 
 	if muted:
+		current_mic_level = 0.0
 		return
+
+	var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
+	if raw_chunk.size() == 0:
+		current_mic_level = 0.0
+		return
+
+	# Общий расчёт уровня для индикатора и VOX
+	var max_amplitude := 0.0
+	for v in raw_chunk:
+		max_amplitude = max(max_amplitude, abs(v.x))
+	current_mic_level = max_amplitude * 100.0
 
 	if cached_mode == 0:   # PTT
 		if not ptt_active:
-			return
-		var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
-		if raw_chunk.size() == 0:
 			return
 		opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, false, false)
 		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
 		if packet.size() > 0:
 			send_voice_packet(packet)
 	else:                    # VOX
-		var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
-		if raw_chunk.size() == 0:
-			return
-		var max_amplitude := 0.0
-		for v in raw_chunk:
-			max_amplitude = max(max_amplitude, abs(v.x))
-		var level := max_amplitude * 100.0
-		if level >= cached_threshold:
+		if current_mic_level >= cached_threshold:
 			is_transmitting = true
 			vox_timer = VOX_HOLD_TIME
 			opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, false, false)
