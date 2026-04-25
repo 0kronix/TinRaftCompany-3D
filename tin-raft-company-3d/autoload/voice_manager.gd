@@ -49,14 +49,19 @@ func _process(_delta: float) -> void:
 		return
 
 	var audio_chunk_size := opus_encoder.calc_audio_chunk_size(OPUS_CHUNK_SIZE)
+	var chunks_read := 0
 	while true:
 		var chunk: PackedVector2Array = AudioServer.get_input_frames(audio_chunk_size)
 		if chunk.size() == 0:
 			break
+		chunks_read += 1
 		opus_encoder.process_pre_encoded_chunk(chunk, OPUS_CHUNK_SIZE, false, false)
 		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
 		if packet.size() > 0:
+			print("MIC OK: encoded ", packet.size(), " bytes | peers: ", multiplayer.get_peers())
 			send_voice_packet(packet)
+	if chunks_read == 0:
+		print("MIC SILENT: no input frames (mic not active?)")
 
 
 func send_voice_packet(data: PackedByteArray) -> void:
