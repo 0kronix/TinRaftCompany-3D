@@ -1,6 +1,8 @@
 extends Node3D
 
-## Attached to the root of the game scene (Inside).
+## Прикреплён к корню игровой сцены (узел `Inside` в main.tscn).
+## Капсула = отдельная «комната»; `EVA` = имитация космоса + `PlayerShip` (шаттл и шлюз
+## возврата в капсулу), всё в одной сцене; телепорт — `NetworkManager._apply_airlock_teleport`.
 ##
 ## World objects (ores, asteroids) are STATIC nodes in main.tscn — they load
 ## for every peer automatically with no spawn packets.
@@ -63,7 +65,12 @@ func _create_world_node(data: Dictionary) -> Node:
 	if scene == null:
 		push_warning("world_manager: could not load scene: " + scene_path)
 		return null
-	var node     := scene.instantiate()
+	var node: Node  = scene.instantiate()
+	# Spawner/репликация иногда дают корню имя @RigidBody3D@N — пути к дочерним нодам ломаются
+	var nname: String = str(node.name)
+	if nname.begins_with("@") or nname == "":
+		var base: String = scene_path.get_file().get_basename()
+		node.name = base + "_%d" % (abs(int(hash(nname + scene_path + str(randi())))) % 1000000)
 	node.position = data.get("position", Vector3.ZERO)
 	var s: float  = data.get("scale", 1.0)
 	node.scale    = Vector3(s, s, s)
@@ -108,11 +115,15 @@ func _rpc_sync_destroyed(paths: PackedStringArray) -> void:
 
 
 func _spawn_player(peer_id: int) -> void:
-	var idx       := player_container.get_child_count()
-	var spawn_pos := SPAWN_POSITIONS[idx % SPAWN_POSITIONS.size()]
+	# get_child_count() учитывал Spawner, CapsuleReturn, маркеры — избыточный idx и смещения
+	var player_idx: int = 0
+	for c in player_container.get_children():
+		if c is CharacterBody3D and str(c.name).begins_with("Player_"):
+			player_idx += 1
+	var spawn_pos: Vector3 = SPAWN_POSITIONS[player_idx % SPAWN_POSITIONS.size()]
 
-	var player    := PlayerScene.instantiate()
-	player.name   = "Player_%d" % peer_id
+	var player: CharacterBody3D = PlayerScene.instantiate() as CharacterBody3D
+	player.name = "Player_%d" % peer_id
 	player.position = spawn_pos
 	player_container.add_child(player, true)
 

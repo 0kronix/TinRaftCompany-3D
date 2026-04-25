@@ -1,111 +1,108 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bxr5lirqk7o2l"]
 
-[ext_resource type="Script" path="res://scenes/network/lobby.gd" id="1_lb"]
+[ext_resource type="Script" uid="uid://5qlce4oc482u" path="res://scenes/network/lobby.gd" id="1_lb"]
 
-[node name="Lobby" type="Control"]
+[node name="Lobby" type="Control" unique_id=1063622184]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_lb")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=916777515]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.055, 0.065, 0.085, 1)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Center" type="CenterContainer" parent="." unique_id=278995118]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Panel" type="PanelContainer" parent="Center"]
+[node name="Panel" type="PanelContainer" parent="Center" unique_id=2120413571]
 custom_minimum_size = Vector2(480, 0)
-
-[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="Center/Panel/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Center/Panel" unique_id=1083007955]
 layout_mode = 2
+
+[node name="Title" type="Label" parent="Center/Panel/VBox" unique_id=1469693687]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
 text = "SPACEZ: DRIFT PROTOCOL"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
 
-[node name="Subtitle" type="Label" parent="Center/Panel/VBox"]
+[node name="Subtitle" type="Label" parent="Center/Panel/VBox" unique_id=700519068]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.65, 0.8, 1)
+theme_override_font_sizes/font_size = 13
 text = "Мультиплеер — Локальная сеть"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.55, 0.65, 0.8, 1)
 
-[node name="MyIPsLabel" type="Label" parent="Center/Panel/VBox"]
-layout_mode = 2
-text = ""
-horizontal_alignment = 1
-autowrap_mode = 3
-theme_override_font_sizes/font_size = 11
-theme_override_colors/font_color = Color(0.45, 0.75, 0.55, 1)
-
-[node name="Spacer1" type="Control" parent="Center/Panel/VBox"]
-layout_mode = 2
+[node name="Spacer1" type="Control" parent="Center/Panel/VBox" unique_id=1584027025]
 custom_minimum_size = Vector2(0, 10)
-
-[node name="Sep1" type="HSeparator" parent="Center/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/color = Color(0.2, 0.25, 0.32, 1)
 
-[node name="Spacer2" type="Control" parent="Center/Panel/VBox"]
+[node name="Sep1" type="HSeparator" parent="Center/Panel/VBox" unique_id=2017142020]
 layout_mode = 2
+
+[node name="Spacer2" type="Control" parent="Center/Panel/VBox" unique_id=1452096981]
 custom_minimum_size = Vector2(0, 6)
-
-[node name="IPLabel" type="Label" parent="Center/Panel/VBox"]
 layout_mode = 2
-text = "IP-адрес для подключения:"
+
+[node name="IPLabel" type="Label" parent="Center/Panel/VBox" unique_id=1125204137]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.9, 1)
+text = "IP-адрес для подключения:"
 
-[node name="IPInput" type="LineEdit" parent="Center/Panel/VBox"]
-layout_mode = 2
+[node name="IPInput" type="LineEdit" parent="Center/Panel/VBox" unique_id=1533839133]
 custom_minimum_size = Vector2(0, 42)
-placeholder_text = "127.0.0.1"
+layout_mode = 2
 text = "127.0.0.1"
+placeholder_text = "127.0.0.1"
 
-[node name="PortLabel" type="Label" parent="Center/Panel/VBox"]
+[node name="PortLabel" type="Label" parent="Center/Panel/VBox" unique_id=1499112236]
 layout_mode = 2
-text = "Порт: 7777"
-theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.5, 0.6, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "Порт: 7777"
 
-[node name="Spacer3" type="Control" parent="Center/Panel/VBox"]
-layout_mode = 2
+[node name="Spacer3" type="Control" parent="Center/Panel/VBox" unique_id=1763325717]
 custom_minimum_size = Vector2(0, 8)
-
-[node name="BtnHost" type="Button" parent="Center/Panel/VBox"]
 layout_mode = 2
+
+[node name="BtnHost" type="Button" parent="Center/Panel/VBox" unique_id=168750708]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "🚀  Создать игру (Хост)"
 
-[node name="BtnJoin" type="Button" parent="Center/Panel/VBox"]
-layout_mode = 2
+[node name="BtnJoin" type="Button" parent="Center/Panel/VBox" unique_id=2102816933]
 custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
 text = "🔗  Подключиться"
 
-[node name="Sep2" type="HSeparator" parent="Center/Panel/VBox"]
+[node name="Sep2" type="HSeparator" parent="Center/Panel/VBox" unique_id=1026211007]
 layout_mode = 2
-theme_override_colors/color = Color(0.2, 0.25, 0.32, 1)
 
-[node name="BtnSolo" type="Button" parent="Center/Panel/VBox"]
-layout_mode = 2
+[node name="BtnSolo" type="Button" parent="Center/Panel/VBox" unique_id=2106992805]
 custom_minimum_size = Vector2(0, 40)
-text = "Одиночная игра"
-theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
-
-[node name="StatusLabel" type="Label" parent="Center/Panel/VBox"]
 layout_mode = 2
-text = ""
+theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
+text = "Одиночная игра"
+
+[node name="StatusLabel" type="Label" parent="Center/Panel/VBox" unique_id=1876386717]
+custom_minimum_size = Vector2(100, 20)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 13

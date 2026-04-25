@@ -53,6 +53,9 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# Статичный корабль в EVA (freeze) — не трогаем физику и ввод.
+	if freeze:
+		return
 	# Сбрасываем активные двигатели
 	for key in _active_thrusters:
 		_active_thrusters[key] = false

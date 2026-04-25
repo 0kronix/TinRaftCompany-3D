@@ -17,7 +17,12 @@ func validate_command(actor: Node3D, command: Dictionary) -> bool:
 	if tree == null:
 		return false
 
-	var target := tree.root.get_node_or_null(command["target_path"])
+	var target: Node = null
+	var nm: Node = tree.root.get_node_or_null("NetworkManager")
+	if nm and nm.has_method("_resolve_command_target_node"):
+		target = nm._resolve_command_target_node(command.get("target_path"))
+	if target == null or not is_instance_valid(target):
+		target = tree.root.get_node_or_null(NodePath(String(command.get("target_path", ""))))
 	if target == null or not is_instance_valid(target):
 		return false
 

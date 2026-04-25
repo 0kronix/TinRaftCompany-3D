@@ -1,33 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://dq7b0434qkpme"]
+[gd_scene load_steps=2 format=3 uid="uid://dq7b0434qkpme"]
 
-[ext_resource type="Script" path="res://scenes/space_eva_manager.gd" id="0_eva"]
-[ext_resource type="PackedScene" uid="uid://c15behmuw6jhs" path="res://scenes/outside/space_environment.tscn" id="1_rysn1"]
-[ext_resource type="PackedScene" uid="uid://2qy1aqi2pnl4" path="res://scenes/outside/shuttle.tscn" id="2_c6rj5"]
-[ext_resource type="PackedScene" uid="uid://2oh7h6m5eq60" path="res://scenes/outside/asteroid_spawner.tscn" id="3_dtwn4"]
-[ext_resource type="PackedScene" path="res://scenes/inside/airlock.tscn" id="4_air"]
+[ext_resource type="PackedScene" path="res://scenes/eva/eva_zone.tscn" id="1_eva"]
 
 [node name="Space" type="Node3D"]
-script = ExtResource("0_eva")
 
-[node name="SpaceEnvironment" parent="." instance=ExtResource("1_rysn1")]
-
-[node name="Shuttle" parent="." instance=ExtResource("2_c6rj5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-main_thruster_force = 15.0
-
-[node name="Asteroids" parent="Shuttle" instance=ExtResource("3_dtwn4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.910014)
-
-[node name="AsteroidSpawner" parent="Shuttle" instance=ExtResource("3_dtwn4")]
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.69088244, -0.52268153, 0.49948534, 0, 0.69088244, 0.72296715, -0.7229672, -0.49948528, 0.4773185, 12.032223, 13.628761, 11.808182)
-
-[node name="PlayerContainer" type="Node3D" parent="."]
-
-[node name="PlayerSpawner" type="MultiplayerSpawner" parent="PlayerContainer"]
-spawn_path = NodePath("..")
-
-[node name="ReturnAirlock" parent="." instance=ExtResource("4_air")]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0.2, 8.0)
-mode = 1
+[node name="EvaZone" parent="." instance=ExtResource("1_eva")]

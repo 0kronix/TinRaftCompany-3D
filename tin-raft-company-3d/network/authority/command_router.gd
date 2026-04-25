@@ -17,10 +17,12 @@ func execute_command(actor: Node3D, command: Dictionary) -> bool:
 func _resolve_target(actor: Node3D, command: Dictionary) -> Node:
 	if not command.has("target_path"):
 		return null
-
-	var target_path: NodePath = command["target_path"]
 	var tree := actor.get_tree()
 	if tree == null:
 		return null
-
-	return tree.root.get_node_or_null(target_path)
+	var nm: Node = tree.root.get_node_or_null("NetworkManager")
+	if nm and nm.has_method("_resolve_command_target_node"):
+		var t: Node = nm._resolve_command_target_node(command.get("target_path"))
+		if t and is_instance_valid(t):
+			return t
+	return tree.root.get_node_or_null(NodePath(String(command.get("target_path", ""))))

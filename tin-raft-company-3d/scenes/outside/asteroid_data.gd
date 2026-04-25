@@ -1,4 +1,4 @@
-extends RigidBody3D
+extends "res://scenes/network/replicated_rigidbody.gd"
 
 @onready var label = $RemoteTransform3D/Label3D
 
@@ -32,42 +32,35 @@ var spawner_center: Node3D
 signal despawned
 
 
+func _enter_tree() -> void:
+	super._enter_tree()
+	_ensure_stable_name()
+
+
 func _ready() -> void:
 	gravity_scale    = 0.0
 	linear_damp      = 0.0
 	angular_damp     = 0.0
 	linear_damp_mode  = RigidBody3D.DAMP_MODE_REPLACE
 	angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
-
-	# Deterministic seed so rotation/scale/trajectory are identical on all peers
-	# before the MultiplayerSynchronizer takes over position authority.
+	if not is_multiplayer_authority():
+		# Кукла с EVA-поля: физика и transform с сервера (replicated_rigidbody + RPC).
+		return
+	# Одинаковый seed на лидере, траектория с сервера.
 	seed(hash(str(get_path())))
-
 	_randomize_rotation()
 	_randomize_scale()
 	call_deferred("_set_random_trajectory")
 
-	# After all properties are set up, install the position synchronizer.
-	call_deferred("_setup_position_sync")
-
 
 # ── Multiplayer position sync ─────────────────────────────────────────────────
 
-func _setup_position_sync() -> void:
-	# Non-authority peers (clients) freeze local physics and let the server's
-	# MultiplayerSynchronizer drive their position and rotation.
-	if not is_multiplayer_authority():
-		freeze      = true
-		freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-
-	var sync   := MultiplayerSynchronizer.new()
-	sync.name  = "PositionSync"
-	var config := SceneReplicationConfig.new()
-	config.add_property(NodePath(".:position"))
-	config.add_property(NodePath(".:rotation"))
-	sync.replication_config   = config
-	sync.replication_interval = 1.0 / 20.0  # 20 Hz
-	add_child(sync)
+func _ensure_stable_name() -> void:
+	var n: String = str(name)
+	if n.begins_with("@"):
+		var p: String = get_scene_file_path()
+		var base: String = p.get_file().get_basename() if p else "Asteroid"
+		name = base + "_%d" % (get_instance_id() & 0xfffff)
 
 
 # ── Physics (server / singleplayer only) ─────────────────────────────────────
@@ -100,12 +93,20 @@ func _set_random_trajectory() -> void:
 	linear_velocity = direction * current_speed
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
 	if not is_multiplayer_authority():
 		return
 	var center := spawner_center.global_position if spawner_center else Vector3.ZERO
 	if global_position.distance_to(center) > despawn_distance:
 		despawned.emit()
+		var nm := get_node_or_null("/root/NetworkManager")
+		if (
+			nm
+			and nm.is_session_active()
+			and str(name).begins_with("AsteroidField_")
+		):
+			nm.notify_node_despawned(self)
 		queue_free()
 
 

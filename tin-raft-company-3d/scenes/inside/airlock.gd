@@ -1,8 +1,7 @@
 extends StaticBody3D
 
-## Шлюз: выход в сцену EVA или возврат в капсулу.
-## Смена сцены (одиночная игра или хост без других подключённых): см. NetworkManager.
-## Пока в сессии 2+ игроков, шлюз не открывается (смена main↔space ломала бы пиров).
+## Шлюз: телепорт в зону EVA (узел EVA в main) или обратно к капсуле.
+## Капсула и открытый космос в одной сцене — мультиплеер: каждый peer сам телепортирует своего игрока (RPC).
 
 enum AirlockMode { TO_SPACE, TO_CAPSULE }
 
@@ -19,8 +18,10 @@ func _ready() -> void:
 
 func _label_text() -> String:
 	if TranslationServer.get_locale().begins_with("ru"):
-		return "Шлюз: EVA" if mode == AirlockMode.TO_SPACE else "К капсуле"
-	return "EVA" if mode == AirlockMode.TO_SPACE else "To capsule"
+		if mode == AirlockMode.TO_SPACE:
+			return "Шлюз: выход в космос"
+		return "В корабль (капсулу)"
+	return "Airlock: EVA" if mode == AirlockMode.TO_SPACE else "Enter ship"
 
 
 func show_hint() -> void:
@@ -49,19 +50,7 @@ func build_interaction_command() -> Dictionary:
 	}
 
 
-func _player_container() -> Node:
-	var p := "Inside/PlayerContainer" if mode == AirlockMode.TO_SPACE else "Space/PlayerContainer"
-	return get_tree().root.get_node_or_null(p)
-
-
-func _other_players_present() -> bool:
-	var pc := _player_container()
-	return pc != null and pc.get_child_count() > 1
-
-
 func server_validate_interaction(_actor: Node3D) -> bool:
-	if _other_players_present():
-		return false
 	return true
 
 

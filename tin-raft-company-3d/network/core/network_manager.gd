@@ -1,8 +1,9 @@
 extends Node
 
 const LOBBY_SCENE := "res://scenes/network/lobby.tscn"
-const SCENE_EVA_SPACE    := "res://scenes/space.tscn"
 const SCENE_CAPSULE_MAIN := "res://scenes/main.tscn"
+## Корень игровой сцены (main.tscn) — капсула и EVA в одном дереве.
+const PATH_INSIDE := "Inside"
 
 # ── Command system signals ────────────────────────────────────────────────────
 signal command_accepted(command_type: String, actor_path: NodePath)
@@ -29,6 +30,138 @@ var _peer: ENetMultiplayerPeer = null
 # Paths of static scene nodes that have been destroyed this session.
 # Used to bring late-joining clients up to date.
 var _destroyed_paths: PackedStringArray = []
+
+# Согласованные имена AsteroidField_%d (RPC/кэш путей) для серверного EVA-спавна.
+var field_asteroid_next_id: int = 0
+
+
+func take_field_asteroid_id() -> int:
+	if not multiplayer.is_server():
+		return 0
+	var n := field_asteroid_next_id
+	field_asteroid_next_id += 1
+	return n
+
+
+# ── World RigidBody transform (реплика без @rpc на RigidBody — иначе scene_cache + process_simplify_path) ──
+
+func broadcast_world_rigid_transform(path_str: String, pos: Vector3, rot: Vector3) -> void:
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
+	if peer == null or peer is OfflineMultiplayerPeer:
+		return
+	if not multiplayer.is_server():
+		return
+	_rpc_apply_world_rigid_transform.rpc(path_str, pos, rot)
+
+
+@rpc("authority", "unreliable")
+func _rpc_apply_world_rigid_transform(path_str: String, pos: Vector3, rot: Vector3) -> void:
+	if multiplayer.is_server():
+		return
+	var n: Node = _resolve_world_rigid_path(path_str)
+	if n is RigidBody3D:
+		var rb: RigidBody3D = n as RigidBody3D
+		if rb.is_multiplayer_authority():
+			return
+		rb.global_position = pos
+		rb.global_rotation = rot
+
+
+func _resolve_world_rigid_path(s: String) -> Node:
+	if s.is_empty():
+		return null
+	var n: Node = _resolve_command_target_node(s)
+	if n != null and is_instance_valid(n):
+		return n
+	if s.begins_with("/root/"):
+		var t: String = s.trim_prefix("/root/").lstrip("/")
+		n = _resolve_command_target_node(t)
+		if n != null and is_instance_valid(n):
+			return n
+	return null
+
+
+# ── EVA: спавн поля астероидов (один RPC с /root/NetworkManager — не два вложенных спавнера) ──
+
+func broadcast_field_asteroid_spawn(
+	sid: int,
+	scene_path: String,
+	xf: Transform3D,
+	linear_vel: Vector3,
+	angular_vel: Vector3,
+	min_s: float,
+	max_s: float,
+	t_spread: float,
+	desp_r: float,
+	min_sc: float,
+	max_sc: float,
+	spawner_path: String
+) -> void:
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
+	if peer == null or peer is OfflineMultiplayerPeer:
+		return
+	if not multiplayer.is_server():
+		return
+	_rpc_replicate_field_asteroid.rpc(
+		sid,
+		scene_path,
+		xf,
+		linear_vel,
+		angular_vel,
+		min_s,
+		max_s,
+		t_spread,
+		desp_r,
+		min_sc,
+		max_sc,
+		spawner_path
+	)
+
+
+@rpc("authority", "reliable")
+func _rpc_replicate_field_asteroid(
+	sid: int,
+	scene_path: String,
+	xf: Transform3D,
+	linear_vel: Vector3,
+	angular_vel: Vector3,
+	min_s: float,
+	max_s: float,
+	t_spread: float,
+	desp_r: float,
+	min_sc: float,
+	max_sc: float,
+	spawner_path: String
+) -> void:
+	if multiplayer.is_server():
+		return
+	var ps := load(scene_path) as PackedScene
+	if ps == null:
+		return
+	var object: Node = ps.instantiate()
+	object.name = "AsteroidField_%d" % sid
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		return
+	scene_root.add_child(object)
+	var rb: RigidBody3D = object as RigidBody3D
+	if rb:
+		rb.global_transform = xf
+		rb.linear_velocity = linear_vel
+		rb.angular_velocity = angular_vel
+	# @export с asteroid.tscn / asteroid_data
+	object.set("min_speed", min_s)
+	object.set("max_speed", max_s)
+	object.set("target_spread", t_spread)
+	object.set("despawn_distance", desp_r)
+	object.set("min_scale", min_sc)
+	object.set("max_scale", max_sc)
+	var sp: Node3D = _resolve_command_target_node(spawner_path) as Node3D
+	if sp:
+		object.set("spawner_center", sp)
+		if object.has_signal("despawned") and sp.has_method("_on_despawn"):
+			object.despawned.connect(Callable(sp, "_on_despawn"))
+
 
 func _ready() -> void:
 	_server_rules = ServerRules.new()
@@ -91,6 +224,7 @@ func _cleanup_session() -> void:
 	multiplayer.multiplayer_peer = null
 	_peer = null
 	_destroyed_paths.clear()
+	field_asteroid_next_id = 0
 
 
 func _disconnect_signal_safe(sig: Signal, callable: Callable) -> void:
@@ -147,9 +281,8 @@ func _rpc_forward_command(sender_id: int, actor_pos: Vector3, command: Dictionar
 	if multiplayer.get_remote_sender_id() != sender_id:
 		return
 
-	# Resolve the target object.
-	var target_path := NodePath(command.get("target_path", ""))
-	var target := get_tree().root.get_node_or_null(target_path)
+	# Разрешаем цель: get_path() с клиента иногда не совпадает с root-узлом.
+	var target: Node = _resolve_command_target_node(command.get("target_path", null))
 	if target == null or not is_instance_valid(target):
 		return
 
@@ -181,9 +314,9 @@ func _rpc_forward_command(sender_id: int, actor_pos: Vector3, command: Dictionar
 	if ok and not item_data_path.is_empty():
 		_rpc_grant_pickup.rpc_id(sender_id, item_data_path, item_count)
 
-	# Airlock: only the requesting client must load a different scene.
+	# Airlock: телепорт только у инициатора (капсула и EVA в одной сцене).
 	if ok and command.get("type", "") in ["airlock_exit", "airlock_return"]:
-		_rpc_teleport_eva_scene.rpc_id(sender_id, String(command.get("type", "")))
+		_rpc_airlock_teleport.rpc_id(sender_id, String(command.get("type", "")))
 
 
 ## Sent by the server to a client after a successful pickup.
@@ -274,35 +407,90 @@ func get_runtime_settings() -> Dictionary:
 	return _runtime_settings.duplicate(true)
 
 
+## Object path in RPC-commands may be relative to the scene instance — resolve robustly.
+func _resolve_command_target_node(path_variant) -> Node:
+	if path_variant == null:
+		return null
+	var s := str(path_variant)
+	if s.is_empty():
+		return null
+	var p: NodePath = path_variant as NodePath if path_variant is NodePath else NodePath(s)
+	# 1) От корня Viewport/Window
+	var n: Node = get_tree().root.get_node_or_null(p)
+	if n != null and is_instance_valid(n):
+		return n
+	# 2) Как дочерний путь к текущей сцене (часто корень = Inside)
+	var scene_root: Node = get_tree().current_scene
+	if scene_root:
+		n = scene_root.get_node_or_null(p)
+		if n != null and is_instance_valid(n):
+			return n
+	# 3) С префиксом Inside/ (get_path() бывает без него)
+	if not s.begins_with("Inside/"):
+		n = get_tree().root.get_node_or_null("Inside/%s" % s)
+		if n != null and is_instance_valid(n):
+			return n
+	return null
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Airlock (EVA): scene change for only the local peer
+# Airlock (EVA): телепорт через маркеры + группы
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _on_local_teleport_command_succeeded(command: Dictionary) -> void:
 	if command.get("type", "") in ["airlock_exit", "airlock_return"]:
-		_apply_airlock_scene(String(command.get("type", "")))
+		_apply_airlock_teleport(String(command.get("type", "")))
 
 
-## Called on clients after a successful airlock interaction on the server.
+## Телепорт шлюза на peer, который нажал взаимодействие (authority на своём игроке).
 @rpc("authority", "reliable")
-func _rpc_teleport_eva_scene(teleport_type: String) -> void:
-	_apply_airlock_scene(teleport_type)
+func _rpc_airlock_teleport(teleport_type: String) -> void:
+	_apply_airlock_teleport(teleport_type)
 
 
-func _apply_airlock_scene(teleport_type: String) -> void:
+func _apply_airlock_teleport(teleport_type: String) -> void:
+	var p := _get_local_player_for_airlock()
+	if p == null:
+		return
+	# В сессии двигаем только персонажа с authority (тот, кого вызывали по RPC). В solo сессии нет.
+	if is_session_active() and not p.is_multiplayer_authority():
+		return
+	var eva_m: Node3D = get_tree().get_first_node_in_group("eva_spawn") as Node3D
+	if eva_m == null:
+		eva_m = get_tree().root.get_node_or_null(
+			"%s/EVA/EvaZone/EvaSpawn" % PATH_INSIDE) as Node3D
+	var cap_m: Node3D = get_tree().get_first_node_in_group("capsule_return") as Node3D
+	if cap_m == null:
+		cap_m = get_tree().root.get_node_or_null(
+			"%s/PlayerContainer/CapsuleReturn" % PATH_INSIDE) as Node3D
+
 	if teleport_type == "airlock_exit":
-		get_tree().change_scene_to_file(SCENE_EVA_SPACE)
-	elif teleport_type == "airlock_return":
-		get_tree().change_scene_to_file(SCENE_CAPSULE_MAIN)
+		if eva_m and is_instance_valid(eva_m):
+			p.global_position = eva_m.global_position
+		p.eva_mode = true
+	else:
+		if cap_m and is_instance_valid(cap_m):
+			p.global_position = cap_m.global_position
+		p.eva_mode = false
+	if p.has_method("align_after_airlock_teleport"):
+		p.align_after_airlock_teleport(teleport_type == "airlock_exit")
 
 
-## Puppets can live in main or in EVA — resolve for distance / interaction.
+func _get_local_player_for_airlock() -> CharacterBody3D:
+	for n: Node in get_tree().get_nodes_in_group("player"):
+		if n is CharacterBody3D and n.is_multiplayer_authority():
+			return n as CharacterBody3D
+	var my_id: int = multiplayer.get_unique_id()
+	if my_id == 0:
+		my_id = 1
+	var by_path: Node = get_tree().root.get_node_or_null(
+		"%s/PlayerContainer/Player_%d" % [PATH_INSIDE, my_id])
+	if by_path is CharacterBody3D:
+		return by_path as CharacterBody3D
+	return null
+
+
+## Кукла всегда в main.tscn (одна сцена, капсула + EVA).
 func _find_puppet(peer_id: int) -> Node3D:
-	var n: Node3D = get_tree().root.get_node_or_null(
-		"Inside/PlayerContainer/Player_%d" % peer_id
-	) as Node3D
-	if n:
-		return n
 	return get_tree().root.get_node_or_null(
-		"Space/PlayerContainer/Player_%d" % peer_id
-	) as Node3D
+		"%s/PlayerContainer/Player_%d" % [PATH_INSIDE, peer_id]) as Node3D

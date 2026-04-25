@@ -8,7 +8,6 @@ const GAME_SCENE := "res://scenes/main.tscn"
 @onready var btn_join:    Button   = $Center/Panel/VBox/BtnJoin
 @onready var btn_solo:    Button   = $Center/Panel/VBox/BtnSolo
 @onready var status_label: Label   = $Center/Panel/VBox/StatusLabel
-@onready var my_ips_label: Label   = $Center/Panel/VBox/MyIPsLabel
 
 var _network_manager: Node = null
 var _connect_timer: SceneTreeTimer = null
@@ -31,7 +30,6 @@ func _ready() -> void:
 		_network_manager.session_started.connect(_on_session_started)
 		_network_manager.connection_failed.connect(_on_connection_failed)
 
-	_show_local_ips()
 	_apply_style()
 
 func _on_host_pressed() -> void:
@@ -97,19 +95,6 @@ func _set_buttons_enabled(enabled: bool) -> void:
 	btn_host.disabled = not enabled
 	btn_join.disabled = not enabled
 	btn_solo.disabled = not enabled
-
-func _show_local_ips() -> void:
-	var lines: PackedStringArray = []
-	for iface: Dictionary in IP.get_local_interfaces():
-		var iface_name: String = iface.get("name", "?")
-		for addr: String in iface.get("addresses", []):
-			# Show only IPv4, skip loopback.
-			if "." in addr and not addr.begins_with("127."):
-				lines.append("%s  →  %s" % [iface_name, addr])
-	if lines.is_empty():
-		my_ips_label.text = _t("Нет сетевых интерфейсов", "No network interfaces found")
-	else:
-		my_ips_label.text = _t("Ваши IP-адреса:\n", "Your IP addresses:\n") + "\n".join(lines)
 
 
 func _t(ru: String, en: String) -> String:

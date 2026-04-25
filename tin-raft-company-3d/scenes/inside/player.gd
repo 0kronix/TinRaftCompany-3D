@@ -3,6 +3,9 @@ extends CharacterBody3D
 const JUMP_VELOCITY = 4.5
 const DEFAULT_MOUSE_SENSITIVITY := 0.003
 
+## Open-space EVA: 6DOF — включается телепортом с шлюза (NetworkManager) или в space_eva.
+@export var eva_mode: bool = false
+
 @onready var head   = $Head
 @onready var camera = $Head/Camera3D
 @onready var ray    = $Head/Camera3D/RayCast3D
@@ -25,6 +28,8 @@ func _setup_sync() -> void:
 	var config := SceneReplicationConfig.new()
 	config.add_property(NodePath(".:position"))
 	config.add_property(NodePath(".:rotation"))
+	config.add_property(NodePath(".:eva_mode"))
+	# В EVA head остаётся 0, но синхронизируем, чтобы плавно переключать режим у кукол.
 	config.add_property(NodePath("Head:rotation"))
 	sync.replication_config = config
 	sync.replication_interval = 1.0 / 20.0
@@ -42,12 +47,24 @@ var fall_multiplier = 1.6
 # --- ВОЗДУХ ---
 var air_control = 0.3
 
+# --- EVA (космос): ньютоновская инерция — тяга накапливает скорость, нет вязкого трения.
+const EVA_THRUST: float   = 2.0
+## Предел скорости (м/с), снимаем только в крайних случаях; при необходимости увеличь.
+const EVA_SPEED_CAP: float = 60.0
+
 var current_hovered = null
 var inventory_open  := false
 var menu_open       := false
 var mouse_sensitivity: float = DEFAULT_MOUSE_SENSITIVITY
 var invert_mouse_y: bool     = false
 var _ping_label: Label = null
+## 0..1, сила ввода джетпака (только в EVA) — для камеры / тряски
+var eva_jetpack_thrust_strength: float = 0.0
+## Нормализованное направление тяги в локале тела (как `wish`) — для тряски камеры вдоль тяги
+var eva_jetpack_thrust_dir: Vector3 = Vector3.ZERO
+
+@export var debug_eva_head_bob_sync: bool = false
+var _debug_warned_no_cam_method: bool = false
 
 
 func _ready() -> void:
@@ -70,6 +87,9 @@ func _setup_local_player() -> void:
 	var body_mesh := get_node_or_null("BodyMesh")
 	if body_mesh:
 		body_mesh.visible = false
+	if eva_mode:
+		head.rotation = Vector3.ZERO
+		up_direction  = Vector3.UP
 	_setup_ping_display()
 
 
@@ -111,12 +131,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if inventory_open or menu_open:
 		return
 
-	# --- ВРАЩЕНИЕ КАМЕРЫ ---
+	# --- ВРАЩЕНИЕ (интерьер: yaw тело, pitch голова; EVA: 6DOF на теле) ---
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		var y_delta: float = event.relative.y if invert_mouse_y else -event.relative.y
-		head.rotate_x(y_delta * mouse_sensitivity)
-		head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
+		if eva_mode:
+			rotate_object_local(Vector3.UP, -event.relative.x * mouse_sensitivity)
+			var y_delta: float = event.relative.y if invert_mouse_y else -event.relative.y
+			rotate_object_local(Vector3.RIGHT, y_delta * mouse_sensitivity)
+		else:
+			rotate_y(-event.relative.x * mouse_sensitivity)
+			var y_delta2: float = event.relative.y if invert_mouse_y else -event.relative.y
+			head.rotate_x(y_delta2 * mouse_sensitivity)
+			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
 
 	# --- ВЗАИМОДЕЙСТВИЕ ---
 	if event.is_action_pressed("interact"):
@@ -126,6 +151,40 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
+	if not eva_mode:
+		eva_jetpack_thrust_strength = 0.0
+		eva_jetpack_thrust_dir = Vector3.ZERO
+	if eva_mode:
+		_physics_process_eva(delta)
+	else:
+		_physics_process_interior(delta)
+
+	# head_bob: get() с узла с GDScript-полями не гарантирует eva/tягу — передаём явно раз в физ-кадр
+	if not is_instance_valid(camera):
+		if not _debug_warned_no_cam_method:
+			push_error("[Player EvaHeadBob] $Head/Camera3D нет (camera=null)")
+			_debug_warned_no_cam_method = true
+	elif not camera.has_method("set_eva_jetpack_state"):
+		if not _debug_warned_no_cam_method:
+			push_error("[Player EvaHeadBob] на камере нет set_eva_jetpack_state; path=" + str(camera.get_path()))
+			_debug_warned_no_cam_method = true
+	else:
+		var ph: int = Engine.get_physics_frames()
+		camera.set_eva_jetpack_state(eva_mode, eva_jetpack_thrust_strength, eva_jetpack_thrust_dir, velocity)
+		if debug_eva_head_bob_sync and eva_mode and (ph % 60 == 0 or ph <= 2):
+			print(
+				"[Player] sync cam ph=",
+				ph,
+				" after set_eva (eva, thrust, |v|) = (",
+				eva_mode,
+				", ",
+				snappedf(eva_jetpack_thrust_strength, 0.001),
+				", ",
+				snappedf(velocity.length(), 0.01),
+				")"
+			)
+
+func _physics_process_interior(delta: float) -> void:
 	if menu_open:
 		return
 
@@ -136,27 +195,48 @@ func _physics_process(delta: float) -> void:
 
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 
-	# --- ПРЫЖОК ---
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_force
 
-	# --- ГРАВИТАЦИЯ ---
 	if not is_on_floor():
 		velocity.y -= gravity * (fall_multiplier if velocity.y < 0 else 1.0) * delta
 
-	# --- ДВИЖЕНИЕ С ИНЕРЦИЕЙ ---
 	var ctrl: float = 1.0 if is_on_floor() else air_control
 	if direction != Vector3.ZERO:
 		velocity.x = move_toward(velocity.x, direction.x * SPEED, acceleration * ctrl * delta)
 		velocity.z = move_toward(velocity.z, direction.z * SPEED, acceleration * ctrl * delta)
-		# Гасим скорость при резком развороте.
-		if sign(direction.x) != sign(velocity.x):
-			velocity.x *= 0.8
-		if sign(direction.z) != sign(velocity.z):
-			velocity.z *= 0.8
 	else:
 		velocity.x = move_toward(velocity.x, 0, friction * delta)
 		velocity.z = move_toward(velocity.z, 0, friction * delta)
+
+	move_and_slide()
+	_update_hover()
+
+
+func _physics_process_eva(delta: float) -> void:
+	if menu_open:
+		eva_jetpack_thrust_strength = 0.0
+		eva_jetpack_thrust_dir = Vector3.ZERO
+		return
+	up_direction = global_transform.basis.y
+
+	var wish := Vector3(
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+		Input.get_action_strength("jump") - Input.get_action_strength("eva_down"),
+		Input.get_action_strength("move_back") - Input.get_action_strength("move_forward")
+	)
+	if wish.length() > 1.0:
+		wish = wish.normalized()
+	eva_jetpack_thrust_strength = 0.0
+	eva_jetpack_thrust_dir = Vector3.ZERO
+	if wish.length_squared() > 0.0001:
+		eva_jetpack_thrust_strength = minf(1.0, wish.length())
+		var wn: Vector3 = wish.normalized()
+		eva_jetpack_thrust_dir = wn
+		velocity += (global_transform.basis * wn) * EVA_THRUST * wish.length() * delta
+		var speed: float = velocity.length()
+		if speed > EVA_SPEED_CAP:
+			velocity = velocity * (EVA_SPEED_CAP / speed)
 
 	move_and_slide()
 	_update_hover()
@@ -308,3 +388,15 @@ func _update_ping() -> void:
 		color = Color(1.0, 0.3, 0.3)
 	_ping_label.add_theme_color_override("font_color", color)
 	_ping_label.text = "%d ms" % rtt
+
+
+## Сброс скорости и «верха» после телепорта шлюзом (NetworkManager).
+func align_after_airlock_teleport(to_eva: bool) -> void:
+	velocity  = Vector3.ZERO
+	rotation  = Vector3.ZERO
+	if head:
+		head.rotation = Vector3.ZERO
+	if to_eva:
+		up_direction = global_transform.basis.y
+	else:
+		up_direction = Vector3.UP

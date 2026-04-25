@@ -1,33 +1,27 @@
-extends RigidBody3D
+extends "res://scenes/network/replicated_rigidbody.gd"
 
 @export var item_data: ItemResource
 @export var count: int = 1
 
 @onready var label = $RemoteTransform3D/Label3D
 
+
+func _enter_tree() -> void:
+	super._enter_tree()
+	_ensure_stable_name()
+
+
 func _ready() -> void:
 	label.modulate         = Color(1, 1, 1, 0)
 	label.outline_modulate = Color(0, 0, 0, 0)
-	call_deferred("_setup_physics_sync")
 
 
-func _setup_physics_sync() -> void:
-	# Non-authority peers (clients) freeze physics; position is driven by the
-	# MultiplayerSynchronizer receiving updates from the server.
-	# In singleplayer is_multiplayer_authority() returns true → no freeze,
-	# full physics (gravity, collisions, pushable by player).
-	if not is_multiplayer_authority():
-		freeze      = true
-		freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
-
-	var sync   := MultiplayerSynchronizer.new()
-	sync.name  = "PositionSync"
-	var config := SceneReplicationConfig.new()
-	config.add_property(NodePath(".:position"))
-	config.add_property(NodePath(".:rotation"))
-	sync.replication_config   = config
-	sync.replication_interval = 1.0 / 20.0
-	add_child(sync)
+func _ensure_stable_name() -> void:
+	var n: String = str(name)
+	if n.begins_with("@"):
+		var p: String = get_scene_file_path()
+		var base: String = p.get_file().get_basename() if p else "Item"
+		name = base + "_%d" % (get_instance_id() & 0xfffff)
 
 
 func show_hint() -> void:
