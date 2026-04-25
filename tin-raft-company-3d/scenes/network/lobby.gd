@@ -8,7 +8,6 @@ const GAME_SCENE := "res://scenes/main.tscn"
 @onready var btn_join:    Button   = $Center/Panel/VBox/BtnJoin
 @onready var btn_solo:    Button   = $Center/Panel/VBox/BtnSolo
 @onready var status_label: Label   = $Center/Panel/VBox/StatusLabel
-@onready var my_ips_label: Label   = $Center/Panel/VBox/MyIPsLabel
 
 var _network_manager: Node = null
 var _connect_timer: SceneTreeTimer = null

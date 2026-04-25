@@ -101,6 +101,7 @@ theme_override_colors/font_color = Color(0.65, 0.75, 0.9, 1)
 text = "Одиночная игра"
 
 [node name="StatusLabel" type="Label" parent="Center/Panel/VBox" unique_id=1317526475]
+custom_minimum_size = Vector2(100, 20)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 horizontal_alignment = 1
