@@ -1,5 +1,8 @@
 extends Node
 
+signal voice_player_added(peer_id: int)
+signal voice_player_removed(peer_id: int)
+
 const OPUS_SAMPLE_RATE  := 48000
 const OPUS_CHANNELS     := 2
 const OPUS_CHUNK_SIZE   := 480
@@ -117,7 +120,7 @@ func send_voice_packet(data: PackedByteArray) -> void:
 		multiplayer.send_bytes(data, id, MultiplayerPeer.TRANSFER_MODE_UNRELIABLE, 1)
 
 func _on_player_joined(_peer_id: int) -> void:
-	pass
+	_create_voice_player(_peer_id)   # создаём плеер сразу при подключении
 
 func _on_player_left(peer_id: int) -> void:
 	_remove_voice_player(peer_id)
@@ -127,8 +130,9 @@ func _on_peer_packet(peer_id: int, packet: PackedByteArray) -> void:
 		_process_voice_packet(peer_id, packet)
 
 func _process_voice_packet(peer_id: int, data: PackedByteArray) -> void:
+	# плеер уже гарантированно создан в _on_player_joined
 	if not peer_voice_players.has(peer_id):
-		_create_voice_player(peer_id)
+		return
 
 	var playback: AudioStreamPlaybackOpus = peer_voice_players[peer_id]["playback"]
 	if playback and playback.available_space_frames() > 0:
@@ -154,6 +158,7 @@ func _create_voice_player(peer_id: int) -> void:
 		"playback": playback,
 		"player": player
 	}
+	voice_player_added.emit(peer_id)
 	print("Voice player for peer ", peer_id, " created")
 
 func set_player_volume(peer_id: int, linear_volume: float) -> void:
@@ -165,6 +170,7 @@ func _remove_voice_player(peer_id: int) -> void:
 	if not peer_voice_players.has(peer_id):
 		return
 	var info = peer_voice_players[peer_id]
+	voice_player_removed.emit(peer_id)
 	info["player"].queue_free()
 	peer_voice_players.erase(peer_id)
 	print("Voice player for peer ", peer_id, " removed")

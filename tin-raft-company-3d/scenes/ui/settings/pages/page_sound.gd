@@ -3,6 +3,8 @@ extends VBoxContainer
 
 @onready var content: VBoxContainer = $ScrollContainer/VBoxContainer
 
+var _voice_players_container: VBoxContainer = null
+
 func _ready() -> void:
 	_configure_layout()
 	_build()
@@ -55,19 +57,32 @@ func _add_row_select(label: String, key: String, options: PackedStringArray) -> 
 	content.add_child(row)
 
 func _add_player_volumes_section() -> void:
-	var players_vbox := VBoxContainer.new()
-	players_vbox.name = "VoicePlayersVolumes"
-	content.add_child(players_vbox)
+	# Если контейнер ещё не создан – создаём, подключаем сигналы и наполняем.
+	if _voice_players_container == null:
+		_voice_players_container = VBoxContainer.new()
+		_voice_players_container.name = "VoicePlayersVolumes"
+		content.add_child(_voice_players_container)
 
-	# Подключаемся к сигналам напрямую через NetworkManager
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		if not nm.player_joined.is_connected(_on_player_joined_voice):
-			nm.player_joined.connect(_on_player_joined_voice.bind(players_vbox))
-		if not nm.player_left.is_connected(_on_player_left_voice):
-			nm.player_left.connect(_on_player_left_voice.bind(players_vbox))
+		var vm := get_node_or_null("/root/VoiceManager")
+		print("VoiceManager found: ", vm != null)
+		if vm:
+			if not vm.voice_player_added.is_connected(_on_voice_player_added):
+				vm.voice_player_added.connect(_on_voice_player_added.bind(_voice_players_container))
+			if not vm.voice_player_removed.is_connected(_on_voice_player_removed):
+				vm.voice_player_removed.connect(_on_voice_player_removed.bind(_voice_players_container))
 
-func _on_player_joined_voice(peer_id: int, container: VBoxContainer) -> void:
+			# Добавляем уже существующие плееры
+			for peer_id in vm.peer_voice_players:
+				_on_voice_player_added(peer_id, _voice_players_container)
+	else:
+		# Контейнер существует – возможно, после refresh его нужно вернуть в content
+		if _voice_players_container.get_parent() == null:
+			content.add_child(_voice_players_container)
+
+func _on_voice_player_added(peer_id: int, container: VBoxContainer) -> void:
+	if container.get_node_or_null("PlayerVol_%d" % peer_id):
+		return
+
 	var row := HBoxContainer.new()
 	row.name = "PlayerVol_%d" % peer_id
 
@@ -90,16 +105,29 @@ func _on_player_joined_voice(peer_id: int, container: VBoxContainer) -> void:
 	container.add_child(row)
 	print("Voice volume slider added for peer ", peer_id)
 
-func _on_player_left_voice(peer_id: int, container: VBoxContainer) -> void:
+func _on_voice_player_removed(peer_id: int, container: VBoxContainer) -> void:
 	var row := container.get_node_or_null("PlayerVol_%d" % peer_id)
 	if row:
 		row.queue_free()
 		print("Voice volume slider removed for peer ", peer_id)
 
 func refresh() -> void:
+	# Сохраняем контейнер со слайдерами перед очисткой
+	var saved_voice = _voice_players_container
+	if saved_voice and saved_voice.get_parent() == content:
+		content.remove_child(saved_voice)
+
+	# Очищаем содержимое
 	for child in content.get_children():
 		child.queue_free()
+
 	_build()
+
+	# Возвращаем сохранённый контейнер, если он был
+	if saved_voice:
+		_voice_players_container = saved_voice
+		if saved_voice.get_parent() == null:
+			content.add_child(saved_voice)
 
 func _configure_layout() -> void:
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
