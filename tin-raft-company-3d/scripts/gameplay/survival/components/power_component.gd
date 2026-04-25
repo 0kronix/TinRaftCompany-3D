@@ -10,9 +10,9 @@ var repair_system_cost_per_second: float = 0.08
 var recharge_per_second: float = 0.04
 
 func tick(delta: float, heavy_load: bool) -> void:
-	var load := passive_drain_per_second + (repair_system_cost_per_second if heavy_load else 0.0)
+	var load_electric := passive_drain_per_second + (repair_system_cost_per_second if heavy_load else 0.0)
 	var recharge := recharge_per_second if not heavy_load else 0.0
-	value = clampf(value - load * delta + recharge * delta, MIN_VALUE, MAX_VALUE)
+	value = clampf(value - load_electric * delta + recharge * delta, MIN_VALUE, MAX_VALUE)
 
 func has_energy() -> bool:
 	return value > 5.0

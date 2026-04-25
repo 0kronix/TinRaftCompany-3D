@@ -1,6 +1,8 @@
 extends Node
 
 const LOBBY_SCENE := "res://scenes/network/lobby.tscn"
+const SCENE_EVA_SPACE    := "res://scenes/space.tscn"
+const SCENE_CAPSULE_MAIN := "res://scenes/main.tscn"
 
 # ── Command system signals ────────────────────────────────────────────────────
 signal command_accepted(command_type: String, actor_path: NodePath)
@@ -130,7 +132,10 @@ func request_command(actor: Node3D, command: Dictionary) -> bool:
 		# Forward to server — optimistic return (client won't roll back visuals).
 		_rpc_forward_command.rpc_id(1, multiplayer.get_unique_id(), actor.global_position, command)
 		return true
-	return _execute_command_local(actor, command)
+	var ok: bool = _execute_command_local(actor, command)
+	if ok:
+		_on_local_teleport_command_succeeded(command)
+	return ok
 
 
 ## Received by the server from a client peer.
@@ -176,6 +181,10 @@ func _rpc_forward_command(sender_id: int, actor_pos: Vector3, command: Dictionar
 	if ok and not item_data_path.is_empty():
 		_rpc_grant_pickup.rpc_id(sender_id, item_data_path, item_count)
 
+	# Airlock: only the requesting client must load a different scene.
+	if ok and command.get("type", "") in ["airlock_exit", "airlock_return"]:
+		_rpc_teleport_eva_scene.rpc_id(sender_id, String(command.get("type", "")))
+
 
 ## Sent by the server to a client after a successful pickup.
 ## The client adds the item to their own inventory.
@@ -212,13 +221,6 @@ func _execute_command_local(actor: Node3D, command: Dictionary) -> bool:
 
 func _emit_rejected(command: Dictionary, reason: String) -> void:
 	command_rejected.emit(command.get("type", "unknown"), reason)
-
-
-## Returns the puppet Node3D for the given peer, if it exists in the game scene.
-func _find_puppet(peer_id: int) -> Node3D:
-	return get_tree().root.get_node_or_null(
-		"Inside/PlayerContainer/Player_%d" % peer_id
-	) as Node3D
 
 
 ## Creates a temporary Node3D at the given world position for server-side
@@ -270,3 +272,37 @@ func apply_runtime_settings(settings: Dictionary) -> void:
 
 func get_runtime_settings() -> Dictionary:
 	return _runtime_settings.duplicate(true)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Airlock (EVA): scene change for only the local peer
+# ─────────────────────────────────────────────────────────────────────────────
+
+func _on_local_teleport_command_succeeded(command: Dictionary) -> void:
+	if command.get("type", "") in ["airlock_exit", "airlock_return"]:
+		_apply_airlock_scene(String(command.get("type", "")))
+
+
+## Called on clients after a successful airlock interaction on the server.
+@rpc("authority", "reliable")
+func _rpc_teleport_eva_scene(teleport_type: String) -> void:
+	_apply_airlock_scene(teleport_type)
+
+
+func _apply_airlock_scene(teleport_type: String) -> void:
+	if teleport_type == "airlock_exit":
+		get_tree().change_scene_to_file(SCENE_EVA_SPACE)
+	elif teleport_type == "airlock_return":
+		get_tree().change_scene_to_file(SCENE_CAPSULE_MAIN)
+
+
+## Puppets can live in main or in EVA — resolve for distance / interaction.
+func _find_puppet(peer_id: int) -> Node3D:
+	var n: Node3D = get_tree().root.get_node_or_null(
+		"Inside/PlayerContainer/Player_%d" % peer_id
+	) as Node3D
+	if n:
+		return n
+	return get_tree().root.get_node_or_null(
+		"Space/PlayerContainer/Player_%d" % peer_id
+	) as Node3D
