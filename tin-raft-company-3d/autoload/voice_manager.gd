@@ -11,7 +11,7 @@ const OPUS_COMPLEXITY   := 5
 var opus_encoder: TwovoipOpusEncoder
 
 var cached_mode := 0
-var cached_threshold := 0.5
+var cached_threshold := 20.0
 var cached_voice_volume := 80.0
 var current_mic_level := 0.0
 
@@ -22,19 +22,15 @@ var ptt_active := false
 var vox_timer := 0.0
 const VOX_HOLD_TIME := 0.3
 
+var _last_input_mix_rate := 0.0
+
 var mute_pressed_prev := false
 var network_manager: NetworkManager
 var peer_voice_players := {}
 
 func _ready() -> void:
 	opus_encoder = TwovoipOpusEncoder.new()
-	opus_encoder.create_sampler(
-		OPUS_SAMPLE_RATE,
-		OPUS_SAMPLE_RATE,
-		OPUS_CHANNELS,
-		true
-	)
-	opus_encoder.create_opus_encoder(OPUS_BITRATE, OPUS_COMPLEXITY, true)
+	_reinit_opus_chain()
 	AudioServer.set_input_device_active(true)
 
 	_apply_voice_settings()
@@ -48,11 +44,26 @@ func _ready() -> void:
 
 	multiplayer.peer_packet.connect(_on_peer_packet)
 
+func _reinit_opus_chain() -> void:
+	if opus_encoder == null:
+		return
+	var mix: float = AudioServer.get_input_mix_rate()
+	if mix <= 0.0:
+		mix = float(OPUS_SAMPLE_RATE)
+	_last_input_mix_rate = mix
+	opus_encoder.create_sampler(
+		mix,
+		float(OPUS_SAMPLE_RATE),
+		OPUS_CHANNELS,
+		true
+	)
+	opus_encoder.create_opus_encoder(OPUS_BITRATE, OPUS_COMPLEXITY, true)
+
 func _apply_voice_settings() -> void:
 	if SettingsManager == null:
 		return
 	cached_mode = int(SettingsManager.data.get("voice_mode", 0))
-	cached_threshold = float(SettingsManager.data.get("mic_threshold", 0.5))
+	cached_threshold = float(SettingsManager.data.get("mic_threshold", 20.0))
 	cached_voice_volume = float(SettingsManager.data.get("voice_volume", 80.0))
 	for peer_id in peer_voice_players:
 		var player: AudioStreamPlayer3D = peer_voice_players[peer_id]["player"]
@@ -71,7 +82,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		muted = !muted
 		print("MUTE: ", "ON" if muted else "OFF")
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if SettingsManager == null:
 		return
 
@@ -79,16 +90,25 @@ func _process(delta: float) -> void:
 		current_mic_level = 0.0
 		return
 
+	# сравнение в Гц, а не is_equal_approx — иначе на части драйверов вечный reinit
+	var live_mix: float = AudioServer.get_input_mix_rate()
+	if live_mix > 0.0 and ( _last_input_mix_rate <= 0.0 or abs(live_mix - _last_input_mix_rate) > 1.0):
+		_reinit_opus_chain()
+	var mix_rate: float = _last_input_mix_rate
+	if mix_rate <= 0.0:
+		mix_rate = float(OPUS_SAMPLE_RATE)
+	var chunk_duration: float = float(OPUS_CHUNK_SIZE) / mix_rate
+
 	var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
 	if raw_chunk.size() == 0:
 		current_mic_level = 0.0
 		return
 
-	# Общий расчёт уровня для индикатора и VOX
 	var max_amplitude := 0.0
 	for v in raw_chunk:
 		max_amplitude = max(max_amplitude, abs(v.x))
-	current_mic_level = max_amplitude * 100.0
+	var vox_instant: float = max_amplitude * 100.0
+	current_mic_level = vox_instant
 
 	if cached_mode == 0:   # PTT
 		if not ptt_active:
@@ -97,18 +117,20 @@ func _process(delta: float) -> void:
 		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
 		if packet.size() > 0:
 			send_voice_packet(packet)
-	else:                    # VOX
-		if current_mic_level >= cached_threshold:
+	else:                    # VOX: порог по пику чанка; хвост — таймер после падения ниже порога
+		if vox_instant >= cached_threshold:
 			is_transmitting = true
 			vox_timer = VOX_HOLD_TIME
+
+		if is_transmitting:
 			opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, false, false)
-			var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
-			if packet.size() > 0:
-				send_voice_packet(packet)
-		elif is_transmitting:
-			vox_timer -= delta
-			if vox_timer <= 0.0:
-				is_transmitting = false
+			var vox_packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
+			if vox_packet.size() > 0:
+				send_voice_packet(vox_packet)
+			if vox_instant < cached_threshold:
+				vox_timer -= chunk_duration
+				if vox_timer <= 0.0:
+					is_transmitting = false
 
 func send_voice_packet(data: PackedByteArray) -> void:
 	if not network_manager or not network_manager._peer:
