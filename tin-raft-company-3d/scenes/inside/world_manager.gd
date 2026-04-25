@@ -103,6 +103,8 @@ func _rpc_client_ready() -> void:
 		var destroyed: PackedStringArray = nm.get_destroyed_paths()
 		if not destroyed.is_empty():
 			_rpc_sync_destroyed.rpc_id(peer_id, destroyed)
+		if nm.has_method("sync_field_asteroids_to_late_client"):
+			nm.sync_field_asteroids_to_late_client(peer_id)
 
 
 ## Received by a newly joined client; removes nodes the server already destroyed.

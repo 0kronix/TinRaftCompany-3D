@@ -81,7 +81,7 @@ func _resolve_world_rigid_path(s: String) -> Node:
 	return null
 
 
-# ── EVA: спавн поля астероидов (один RPC с /root/NetworkManager — не два вложенных спавнера) ──
+# ── EVA: поле астероидов — один RPC с NetworkManager; поздний join: пакет по снимку дерева ──
 
 func broadcast_field_asteroid_spawn(
 	sid: int,
@@ -135,21 +135,55 @@ func _rpc_replicate_field_asteroid(
 ) -> void:
 	if multiplayer.is_server():
 		return
-	var ps := load(scene_path) as PackedScene
-	if ps == null:
-		return
-	var object: Node = ps.instantiate()
-	object.name = "AsteroidField_%d" % sid
+	_spawn_one_field_asteroid_client(
+		sid,
+		scene_path,
+		xf,
+		linear_vel,
+		angular_vel,
+		min_s,
+		max_s,
+		t_spread,
+		desp_r,
+		min_sc,
+		max_sc,
+		spawner_path,
+		true
+	)
+
+
+func _spawn_one_field_asteroid_client(
+	sid: int,
+	scene_path: String,
+	xf: Transform3D,
+	linear_vel: Vector3,
+	angular_vel: Vector3,
+	min_s: float,
+	max_s: float,
+	t_spread: float,
+	desp_r: float,
+	min_sc: float,
+	max_sc: float,
+	spawner_path: String,
+	skip_if_exists: bool
+) -> void:
+	var name_str := "AsteroidField_%d" % sid
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		return
+	if skip_if_exists and scene_root.get_node_or_null(name_str) != null:
+		return
+	var ps: PackedScene = load(scene_path) as PackedScene
+	if ps == null:
+		return
+	var object: Node = ps.instantiate()
+	object.name = name_str
 	scene_root.add_child(object)
 	var rb: RigidBody3D = object as RigidBody3D
 	if rb:
 		rb.global_transform = xf
 		rb.linear_velocity = linear_vel
 		rb.angular_velocity = angular_vel
-	# @export с asteroid.tscn / asteroid_data
 	object.set("min_speed", min_s)
 	object.set("max_speed", max_s)
 	object.set("target_spread", t_spread)
@@ -161,6 +195,82 @@ func _rpc_replicate_field_asteroid(
 		object.set("spawner_center", sp)
 		if object.has_signal("despawned") and sp.has_method("_on_despawn"):
 			object.despawned.connect(Callable(sp, "_on_despawn"))
+
+
+func _collect_field_asteroid_snapshot() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if not multiplayer.is_server():
+		return out
+	var inside: Node = get_tree().root.get_node_or_null("Inside")
+	if inside == null or not is_instance_valid(inside):
+		return out
+	_collect_field_asteroid_recursive(inside, out)
+	return out
+
+
+func _collect_field_asteroid_recursive(n: Node, out: Array[Dictionary]) -> void:
+	for c: Node in n.get_children():
+		var node_name := str(c.name)
+		if node_name.begins_with("AsteroidField_") and c is RigidBody3D:
+			var rb: RigidBody3D = c as RigidBody3D
+			var sfp: String = rb.get_scene_file_path()
+			if sfp.is_empty():
+				_collect_field_asteroid_recursive(c, out)
+				continue
+			var id_str2: String = node_name.trim_prefix("AsteroidField_")
+			var field_id: int = id_str2.to_int()
+			var sp: Variant = c.get("spawner_center")
+			var spath: String = str((sp as Node).get_path()) if sp is Node and is_instance_valid(sp) else ""
+			out.append({
+				"sid": field_id,
+				"scene_path": sfp,
+				"xf": rb.global_transform,
+				"lv": rb.linear_velocity,
+				"av": rb.angular_velocity,
+				"min_s": float(c.get("min_speed")),
+				"max_s": float(c.get("max_speed")),
+				"t_spread": float(c.get("target_spread")),
+				"desp_r": float(c.get("despawn_distance")),
+				"min_sc": float(c.get("min_scale")),
+				"max_sc": float(c.get("max_scale")),
+				"spawner_path": spath,
+			})
+		_collect_field_asteroid_recursive(c, out)
+
+
+## Сервер: поздно подключившийся пир (после main + client_ready) — весь набор EVA-астероидов.
+func sync_field_asteroids_to_late_client(peer_id: int) -> void:
+	if not multiplayer.is_server() or peer_id < 1:
+		return
+	var snap: Array[Dictionary] = _collect_field_asteroid_snapshot()
+	if snap.is_empty():
+		return
+	_rpc_field_asteroid_batch.rpc_id(peer_id, snap)
+
+
+@rpc("authority", "reliable")
+func _rpc_field_asteroid_batch(records: Array) -> void:
+	if multiplayer.is_server():
+		return
+	for d: Variant in records:
+		if not (d is Dictionary):
+			continue
+		var m: Dictionary = d as Dictionary
+		_spawn_one_field_asteroid_client(
+			int(m.get("sid", 0)),
+			String(m.get("scene_path", "")),
+			m.get("xf", Transform3D.IDENTITY) as Transform3D,
+			m.get("lv", Vector3.ZERO) as Vector3,
+			m.get("av", Vector3.ZERO) as Vector3,
+			float(m.get("min_s", 0.0)),
+			float(m.get("max_s", 0.0)),
+			float(m.get("t_spread", 0.0)),
+			float(m.get("desp_r", 0.0)),
+			float(m.get("min_sc", 0.0)),
+			float(m.get("max_sc", 0.0)),
+			String(m.get("spawner_path", "")),
+			true
+		)
 
 
 func _ready() -> void:
