@@ -6,6 +6,9 @@ signal settings_applied
 const SAVE_PATH := "user://settings.cfg"
 const SUPPORTED_LANGUAGES: PackedStringArray = ["ru", "en"]
 
+var _data_snapshot := {}
+var _is_editing := false
+
 var data := {
 	# Звук
 	"vol_master":    80.0,
@@ -93,6 +96,8 @@ func load_settings() -> void:
 
 func reset_to_defaults() -> void:
 	data = _defaults.duplicate(true)
+	commit_edit()
+	save()   
 
 func apply_all() -> void:
 	_apply_audio()
@@ -200,3 +205,21 @@ func get_voice_volume() -> float:
 
 func get_voice_mode() -> int:
 	return int(data.get("voice_mode", 0))
+	
+func begin_edit() -> void:
+	_data_snapshot = data.duplicate(true)
+	_is_editing = true
+
+func cancel_edit() -> void:
+	if _is_editing:
+		data = _data_snapshot.duplicate(true)
+		_is_editing = false
+
+func commit_edit() -> void:
+	if _is_editing:
+		_data_snapshot = data.duplicate(true)   # обновляем снимок
+		_is_editing = false
+		
+func apply_and_save() -> void:
+	save()
+	commit_edit()

@@ -6,14 +6,14 @@ signal voice_player_removed(peer_id: int)
 const OPUS_SAMPLE_RATE  := 48000
 const OPUS_CHANNELS     := 2
 const OPUS_CHUNK_SIZE   := 480
-const OPUS_BITRATE      := 128000
-const OPUS_COMPLEXITY   := 6
+const OPUS_BITRATE      := 64000
+const OPUS_COMPLEXITY   := 5
 
 var opus_encoder: TwovoipOpusEncoder
-var voice_mode := 0
-var mic_threshold := 20.0
+var cached_mode := 0
+var cached_threshold := 0.5
+var cached_voice_volume := 80.0
 var muted := false
-var voice_volume := 80.0
 var is_transmitting := false
 var ptt_active := false
 var vox_timer := 0.0
@@ -48,12 +48,12 @@ func _ready() -> void:
 func _apply_voice_settings() -> void:
 	if SettingsManager == null:
 		return
-	voice_mode = int(SettingsManager.data.get("voice_mode", 0))
-	mic_threshold = float(SettingsManager.data.get("mic_threshold", 20.0))
-	voice_volume = float(SettingsManager.data.get("voice_volume", 80.0))
+	cached_mode = int(SettingsManager.data.get("voice_mode", 0))
+	cached_threshold = float(SettingsManager.data.get("mic_threshold", 0.5))
+	cached_voice_volume = float(SettingsManager.data.get("voice_volume", 80.0))
 	for peer_id in peer_voice_players:
 		var player: AudioStreamPlayer3D = peer_voice_players[peer_id]["player"]
-		player.volume_db = linear_to_db(clampf(voice_volume / 100.0, 0.0, 1.0))
+		player.volume_db = linear_to_db(clampf(cached_voice_volume / 100.0, 0.0, 1.0))
 
 func _unhandled_input(event: InputEvent) -> void:
 	if SettingsManager == null:
@@ -72,16 +72,12 @@ func _process(delta: float) -> void:
 	if SettingsManager == null:
 		return
 
-	var current_mode := int(SettingsManager.data.get("voice_mode", 0))
-	var threshold := float(SettingsManager.data.get("mic_threshold", 0.5))
-
 	if muted:
 		return
 
-	if current_mode == 0:   # PTT
+	if cached_mode == 0:   # PTT
 		if not ptt_active:
 			return
-		# Читаем чанк только когда кнопка нажата
 		var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
 		if raw_chunk.size() == 0:
 			return
@@ -90,7 +86,6 @@ func _process(delta: float) -> void:
 		if packet.size() > 0:
 			send_voice_packet(packet)
 	else:                    # VOX
-		# Читаем чанк для проверки уровня
 		var raw_chunk: PackedVector2Array = AudioServer.get_input_frames(OPUS_CHUNK_SIZE)
 		if raw_chunk.size() == 0:
 			return
@@ -98,10 +93,9 @@ func _process(delta: float) -> void:
 		for v in raw_chunk:
 			max_amplitude = max(max_amplitude, abs(v.x))
 		var level := max_amplitude * 100.0
-		if level >= threshold:
+		if level >= cached_threshold:
 			is_transmitting = true
 			vox_timer = VOX_HOLD_TIME
-			# Кодируем тот же чанк, который проверили
 			opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, false, false)
 			var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
 			if packet.size() > 0:
@@ -146,7 +140,7 @@ func _create_voice_player(peer_id: int) -> void:
 	var player := AudioStreamPlayer3D.new()
 	player.stream   = stream
 	player.bus      = "Master"
-	var vol := float(SettingsManager.data.get("voice_volume", voice_volume)) / 100.0
+	var vol := cached_voice_volume / 100.0
 	player.volume_db = linear_to_db(clampf(vol, 0.0, 1.0))
 	add_child(player)
 	player.play()
