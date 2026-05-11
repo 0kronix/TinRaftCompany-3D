@@ -33,3 +33,4 @@ environment = SubResource("Environment_moagf")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=351998908]
 transform = Transform3D(-0.24778868, 0.6721354, -0.6977354, -0.7929786, 0.2730444, 0.54463905, 0.55658394, 0.68824464, 0.4653317, 0, 0, 0)
+directional_shadow_mode = 0

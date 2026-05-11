@@ -1,32 +1,94 @@
-[gd_scene load_steps=5 format=3 uid="uid://c8b9eva_zone01"]
+[gd_scene format=3 uid="uid://di2y3c3erx57x"]
 
 [ext_resource type="PackedScene" uid="uid://c15behmuw6jhs" path="res://scenes/outside/space_environment.tscn" id="1_env"]
 [ext_resource type="PackedScene" uid="uid://2qy1aqi2pnl4" path="res://scenes/outside/shuttle.tscn" id="2_shu"]
 [ext_resource type="PackedScene" uid="uid://2oh7h6m5eq60" path="res://scenes/outside/asteroid_spawner.tscn" id="3_asp"]
-[ext_resource type="PackedScene" path="res://scenes/inside/airlock.tscn" id="4_air"]
+[ext_resource type="PackedScene" uid="uid://ck6205r44kcyg" path="res://scenes/inside/airlock.tscn" id="4_air"]
+[ext_resource type="PackedScene" uid="uid://baqh6q6yfyiji" path="res://scenes/eva/shuttle_helm.tscn" id="6_helm"]
+[ext_resource type="PackedScene" uid="uid://cqi7ifwvg413a" path="res://scenes/inside/capsule.tscn" id="7_cap"]
+[ext_resource type="PackedScene" uid="uid://dk3npfd2tkanp" path="res://scenes/inside/interactable_object.tscn" id="8_iobj"]
+[ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="9_ctrl"]
+[ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="10_ast"]
+[ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="11_ore"]
+[ext_resource type="PackedScene" uid="uid://bhcfubpbv1drw" path="res://scenes/inside/instrument_panel.tscn" id="12_ip"]
 
-[node name="EvaZone" type="Node3D"]
+[node name="EvaZone" type="Node3D" unique_id=505347578]
 
-[node name="PlayerShip" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="ShipInterior" type="Node3D" parent="." unique_id=1101110455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2200, 40, 0)
 
-[node name="Shuttle" parent="PlayerShip" instance=ExtResource("2_shu")]
-freeze = true
-main_thruster_force = 0.0
+[node name="IronOre" parent="ShipInterior" unique_id=582188295 instance=ExtResource("11_ore")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.6907731)
+mass = 0.01
 
-[node name="Asteroids" parent="PlayerShip/Shuttle" instance=ExtResource("3_asp")]
+[node name="IronOre2" parent="ShipInterior" unique_id=369459437 instance=ExtResource("11_ore")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.802047, -0.6)
+mass = 0.01
+
+[node name="IronOre3" parent="ShipInterior" unique_id=254101858 instance=ExtResource("11_ore")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.802047, 1.3)
+mass = 0.01
+
+[node name="IronOre4" parent="ShipInterior" unique_id=964945681 instance=ExtResource("11_ore")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.802047, -0.4)
+mass = 0.01
+
+[node name="Asteroid" parent="ShipInterior" unique_id=995466423 instance=ExtResource("10_ast")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, -2.1868458)
+debris_scene = ExtResource("11_ore")
+
+[node name="Asteroid2" parent="ShipInterior" unique_id=280990644 instance=ExtResource("10_ast")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.677394, 1.900154, 1.9179773)
+debris_scene = ExtResource("11_ore")
+
+[node name="Capsule" parent="ShipInterior" unique_id=569433327 instance=ExtResource("7_cap")]
+transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
+
+[node name="InteractableObject" parent="ShipInterior" unique_id=14440609 instance=ExtResource("8_iobj")]
+transform = Transform3D(0.84690994, -0.0007189749, -0.5317365, 0.0015534024, 0.99999845, 0.001122019, 0.53173465, -0.0017762488, 0.8469096, 4.4946065, 0.9833138, -4.6446953)
+ui_scene = ExtResource("9_ctrl")
+
+[node name="InteractableObject2" parent="ShipInterior" unique_id=2118796707 instance=ExtResource("8_iobj")]
+transform = Transform3D(0.99960214, 6.141818e-05, 0.028235497, -5.924405e-05, 1.0000007, -7.7802455e-05, -0.028235521, 7.6098135e-05, 0.99960196, 0.2948803, 0.9944855, -4.7728643)
+ui_scene = ExtResource("9_ctrl")
+
+[node name="StatusPanel" parent="ShipInterior" unique_id=376383794 instance=ExtResource("12_ip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.959115, 1.5, -4.5)
+
+[node name="PowerPanel" parent="ShipInterior" unique_id=204377410 instance=ExtResource("12_ip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1082118, 1.5, -4.5)
+
+[node name="SensorPanel" parent="ShipInterior" unique_id=353215927 instance=ExtResource("12_ip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72062695, 1.5, -4.5)
+
+[node name="EvaAirlock" parent="ShipInterior" unique_id=77895095 instance=ExtResource("4_air")]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 3.1, 1.2, -4.7)
+
+[node name="ShuttleHelm" parent="ShipInterior" unique_id=741591212 instance=ExtResource("6_helm")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 1.5987414, 3.3959205)
+
+[node name="PlayerContainer" type="Node3D" parent="ShipInterior" unique_id=1237425877]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0528069, 0)
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="ShipInterior/PlayerContainer" unique_id=933512748]
+spawn_path = NodePath("..")
+
+[node name="CapsuleReturn" type="Marker3D" parent="ShipInterior/PlayerContainer" unique_id=651942022 groups=["capsule_return"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0.6491871, 1.97)
+
+[node name="SpaceEnvironment" parent="." unique_id=1509912929 instance=ExtResource("1_env")]
+
+[node name="Shuttle" parent="." unique_id=683908050 instance=ExtResource("2_shu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.080631)
+
+[node name="Asteroids" parent="Shuttle" unique_id=2087162624 instance=ExtResource("3_asp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.910014)
 
-[node name="AsteroidSpawner" parent="PlayerShip/Shuttle" instance=ExtResource("3_asp")]
+[node name="AsteroidSpawner" parent="Shuttle" unique_id=103140443 instance=ExtResource("3_asp")]
 
-[node name="ReturnAirlock" parent="PlayerShip" instance=ExtResource("4_air")]
+[node name="ReturnAirlock" parent="Shuttle" unique_id=849734855 instance=ExtResource("4_air")]
 transform = Transform3D(0, 0, 0.35, 0, 0.35, 0, -0.35, 0, 0, 2.15, 0.5, 0)
 mode = 1
 
-[node name="EvaSpawn" type="Marker3D" parent="." groups=["eva_spawn"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 5.5)
-
-[node name="SpaceEnvironment" parent="." instance=ExtResource("1_env")]
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.69088244, -0.52268153, 0.49948534, 0, 0.69088244, 0.72296715, -0.7229672, -0.49948528, 0.4773185, 12.032223, 13.628761, 11.808182)
+[node name="EvaSpawn" type="Marker3D" parent="Shuttle" unique_id=1702406821 groups=["eva_spawn"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.421, 0, 0.055)

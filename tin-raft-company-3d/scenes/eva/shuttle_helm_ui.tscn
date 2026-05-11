@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://3kn16ki1015m"]
+
+[ext_resource type="Script" path="res://scenes/eva/shuttle_helm_ui.gd" id="1_ui"]
+
+[node name="ShuttleHelmUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_ui")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = 11
+
+[node name="Panel" type="Panel" parent="CanvasLayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -90.0
+offset_right = 180.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Panel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 344.0
+offset_bottom = 72.0
+text = "Пробел — главный двигатель · WASD / Q R — ОМС · Esc — закрыть"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/Panel"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 78.0
+offset_right = 300.0
+offset_bottom = 118.0
+text = "Закрыть (Esc)"

@@ -104,9 +104,8 @@ func _resize() -> void:
 	sidebar.custom_minimum_size.x = 220
 
 func _exit_to_lobby() -> void:
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm and nm.is_session_active():
-		nm.leave()
+	if NetworkManager.is_session_active():
+		NetworkManager.leave()
 	get_tree().change_scene_to_file("res://scenes/network/lobby.tscn")
 
 func _refresh_texts() -> void:

@@ -1,4 +1,4 @@
-extends "res://scenes/network/replicated_rigidbody.gd"
+extends NetworkReplicatedRigidBody
 
 @onready var label = $RemoteTransform3D/Label3D
 
@@ -38,13 +38,15 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	if label:
+		Label3DHint.prepare_hidden(label)
 	gravity_scale    = 0.0
 	linear_damp      = 0.0
 	angular_damp     = 0.0
 	linear_damp_mode  = RigidBody3D.DAMP_MODE_REPLACE
 	angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
 	if not is_multiplayer_authority():
-		# Кукла с EVA-поля: физика и transform с сервера (replicated_rigidbody + RPC).
+		# Кукла с EVA-поля: физика и transform с сервера (NetworkReplicatedRigidBody + RPC).
 		return
 	# Одинаковый seed на лидере, траектория с сервера.
 	seed(hash(str(get_path())))
@@ -100,22 +102,18 @@ func _physics_process(delta: float) -> void:
 	var center := spawner_center.global_position if spawner_center else Vector3.ZERO
 	if global_position.distance_to(center) > despawn_distance:
 		despawned.emit()
-		var nm := get_node_or_null("/root/NetworkManager")
 		if (
-			nm
-			and nm.is_session_active()
+			NetworkManager.is_session_active()
 			and str(name).begins_with("AsteroidField_")
 		):
-			nm.notify_node_despawned(self)
+			NetworkManager.notify_node_despawned(self)
 		queue_free()
 
 
 # ── Interaction ───────────────────────────────────────────────────────────────
 
 func interact(_player: Node3D) -> void:
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		nm.request_command(_player, build_interaction_command())
+	NetworkManager.request_command(_player, build_interaction_command())
 
 
 func build_interaction_command() -> Dictionary:
@@ -129,7 +127,7 @@ func server_validate_interaction(_actor: Node3D) -> bool:
 	return true
 
 
-func server_apply_interaction(_actor: Node3D) -> bool:
+func server_apply_interaction(_actor: Node3D, _command: Dictionary = {}) -> bool:
 	# Dust cloud is a local-only visual effect — not replicated.
 	_spawn_dust_cloud()
 
@@ -140,9 +138,8 @@ func server_apply_interaction(_actor: Node3D) -> bool:
 	despawned.emit()
 
 	# Broadcast this asteroid's removal to all peers and record for late-joiners.
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm and nm.is_session_active():
-		nm.notify_node_despawned(self)
+	if NetworkManager.is_session_active():
+		NetworkManager.notify_node_despawned(self)
 	queue_free()
 	return true
 
@@ -157,7 +154,8 @@ func _spawn_dust_cloud() -> void:
 	dust.global_position = global_position
 
 	var asteroid_radius := (scale.x + scale.y + scale.z) / 3.0
-	dust.amount = int(20 * asteroid_radius * asteroid_radius)
+	const MAX_DUST_PARTICLES: int = 72
+	dust.amount = mini(MAX_DUST_PARTICLES, int(20 * asteroid_radius * asteroid_radius))
 
 	if dust.process_material is ParticleProcessMaterial:
 		var mat := dust.process_material as ParticleProcessMaterial
@@ -181,7 +179,7 @@ func _spawn_debris() -> void:
 		push_warning("asteroid_data: debris_scene not assigned on " + name)
 		return
 
-	var world_objects: Node = get_node_or_null("/root/Inside/WorldObjects")
+	var world_objects: Node = GameScenePaths.get_world_objects_node(get_tree())
 	if world_objects == null:
 		world_objects = get_tree().current_scene
 
@@ -218,12 +216,8 @@ func _spawn_debris() -> void:
 
 
 func show_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a",         1.0, 0.15)
-	tween.tween_property(label, "outline_modulate:a", 1.0, 0.15)
+	Label3DHint.tween_show(self, label)
 
 
 func hide_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a",         0.0, 0.1)
-	tween.tween_property(label, "outline_modulate:a", 0.0, 0.1)
+	Label3DHint.tween_hide(self, label)

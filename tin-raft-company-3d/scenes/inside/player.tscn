@@ -30,7 +30,7 @@ albedo_color = Color(0.2, 0.27, 0.38, 1)
 metallic = 0.3
 roughness = 0.85
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_2ag4j"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_or0k5"]
 shader = ExtResource("2_upfb8")
 shader_parameter/grain_strength = 0.008
 shader_parameter/vignette_strength = 0.05
@@ -75,7 +75,7 @@ surface_material_override/0 = SubResource("Material3D_pl1")
 layer = 9
 
 [node name="ColorRect" type="ColorRect" parent="ShaiderLayer" unique_id=206285741]
-material = SubResource("ShaderMaterial_2ag4j")
+material = SubResource("ShaderMaterial_or0k5")
 offset_right = 1600.0
 offset_bottom = 900.0
 mouse_filter = 2

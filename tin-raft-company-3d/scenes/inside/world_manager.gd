@@ -1,8 +1,8 @@
 extends Node3D
 
 ## Прикреплён к корню игровой сцены (узел `Inside` в main.tscn).
-## Капсула = отдельная «комната»; `EVA` = имитация космоса + `PlayerShip` (шаттл и шлюз
-## возврата в капсулу), всё в одной сцене; телепорт — `NetworkManager._apply_airlock_teleport`.
+## `EVA` = космос + шаттл. Салон корабля — отдельный статичный узел `ShipInterior` (далеко от шаттла);
+## вход/выход шлюзами на маркеры `eva_spawn` / `capsule_return`. Телепорт — `AirlockTeleportService`.
 ##
 ## World objects (ores, asteroids) are STATIC nodes in main.tscn — they load
 ## for every peer automatically with no spawn packets.
@@ -26,8 +26,8 @@ const SPAWN_POSITIONS: Array[Vector3] = [
 	Vector3( 0.20, 1.95,  1.20),
 ]
 
-@onready var player_container: Node3D            = $PlayerContainer
-@onready var player_spawner:   MultiplayerSpawner = $PlayerContainer/PlayerSpawner
+@onready var player_container: Node3D            = $EVA/ShipInterior/PlayerContainer
+@onready var player_spawner:   MultiplayerSpawner = $EVA/ShipInterior/PlayerContainer/PlayerSpawner
 @onready var world_spawner:    MultiplayerSpawner = $WorldObjects/WorldSpawner
 
 
@@ -38,9 +38,7 @@ func _ready() -> void:
 	# clients recreate dynamic nodes (debris) at the correct position.
 	world_spawner.spawn_function = _create_world_node
 
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		nm.player_left.connect(_on_player_left)
+	NetworkManager.player_left.connect(_on_player_left)
 
 	if multiplayer.is_server():
 		_spawn_player(1)
@@ -76,8 +74,7 @@ func _create_world_node(data: Dictionary) -> Node:
 	node.scale    = Vector3(s, s, s)
 	# Apply blast velocity for debris pieces. Setting linear_velocity before
 	# the node enters the tree is picked up by the physics server on entry.
-	# On authority (server) physics runs freely; clients are frozen by
-	# _setup_physics_sync() and follow the server via MultiplayerSynchronizer.
+	# On authority (server) physics runs freely; clients — freeze + реплика позы через NetworkManager.
 	var velocity: Vector3 = data.get("velocity", Vector3.ZERO)
 	if velocity != Vector3.ZERO and node is RigidBody3D:
 		(node as RigidBody3D).linear_velocity = velocity
@@ -98,13 +95,10 @@ func _rpc_client_ready() -> void:
 
 	# Send the list of destroyed static objects so the late-joiner matches
 	# the current server world state.
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		var destroyed: PackedStringArray = nm.get_destroyed_paths()
-		if not destroyed.is_empty():
-			_rpc_sync_destroyed.rpc_id(peer_id, destroyed)
-		if nm.has_method("sync_field_asteroids_to_late_client"):
-			nm.sync_field_asteroids_to_late_client(peer_id)
+	var destroyed: PackedStringArray = NetworkManager.get_destroyed_paths()
+	if not destroyed.is_empty():
+		_rpc_sync_destroyed.rpc_id(peer_id, destroyed)
+	NetworkManager.sync_field_asteroids_to_late_client(peer_id)
 
 
 ## Received by a newly joined client; removes nodes the server already destroyed.

@@ -54,10 +54,9 @@ func _spawn_item() -> void:
 		return
 
 	var object := scene.instantiate()
-	var nm := get_node_or_null("/root/NetworkManager")
 	var sid: int
-	if nm and nm.has_method("take_field_asteroid_id") and multiplayer.is_server():
-		sid = nm.take_field_asteroid_id()
+	if multiplayer.is_server():
+		sid = NetworkManager.take_field_asteroid_id()
 	else:
 		sid = current_count
 	object.name = "AsteroidField_%d" % sid
@@ -86,31 +85,25 @@ func _spawn_item() -> void:
 	object.max_scale = max_scale
 	object.set("spawner_center", self)
 
-	var use_net: bool = (
-		multiplayer.has_multiplayer_peer()
-		and multiplayer.is_server()
-		and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer)
-	)
-	if use_net:
+	if MultiplayerRuntime.has_active_session_for(self) and multiplayer.is_server():
 		await get_tree().process_frame
 		var rb := object as RigidBody3D
 		if rb == null:
 			return
-		if nm and nm.has_method("broadcast_field_asteroid_spawn"):
-			nm.broadcast_field_asteroid_spawn(
-				sid,
-				scene.resource_path,
-				rb.global_transform,
-				rb.linear_velocity,
-				rb.angular_velocity,
-				min_speed,
-				max_speed,
-				target_spread,
-				despawn_radius,
-				min_scale,
-				max_scale,
-				str(get_path())
-			)
+		NetworkManager.broadcast_field_asteroid_spawn(
+			sid,
+			scene.resource_path,
+			rb.global_transform,
+			rb.linear_velocity,
+			rb.angular_velocity,
+			min_speed,
+			max_speed,
+			target_spread,
+			despawn_radius,
+			min_scale,
+			max_scale,
+			str(get_path())
+		)
 
 
 func _on_despawn() -> void:

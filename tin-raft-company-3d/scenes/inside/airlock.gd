@@ -12,8 +12,7 @@ enum AirlockMode { TO_SPACE, TO_CAPSULE }
 
 func _ready() -> void:
 	label.text = _label_text()
-	label.modulate = Color(1, 1, 1, 0)
-	label.outline_modulate = Color(0, 0, 0, 0)
+	Label3DHint.prepare_hidden(label)
 
 
 func _label_text() -> String:
@@ -25,22 +24,16 @@ func _label_text() -> String:
 
 
 func show_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a", 1.0, 0.15)
-	tween.tween_property(label, "outline_modulate:a", 1.0, 0.15)
+	Label3DHint.tween_show(self, label)
 
 
 func hide_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a", 0.0, 0.1)
-	tween.tween_property(label, "outline_modulate:a", 0.0, 0.1)
+	Label3DHint.tween_hide(self, label)
 
 
 func interact(caller: Node3D) -> void:
 	var command := build_interaction_command()
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		nm.request_command(caller, command)
+	NetworkManager.request_command(caller, command)
 
 
 func build_interaction_command() -> Dictionary:
@@ -54,5 +47,5 @@ func server_validate_interaction(_actor: Node3D) -> bool:
 	return true
 
 
-func server_apply_interaction(_actor: Node3D) -> bool:
+func server_apply_interaction(_actor: Node3D, _command: Dictionary = {}) -> bool:
 	return true

@@ -1,0 +1,28 @@
+[gd_scene load_steps=6 format=3 uid="uid://b7v4shuttlehelm"]
+
+[ext_resource type="Script" path="res://scenes/eva/shuttle_helm.gd" id="1_helm"]
+[ext_resource type="PackedScene" uid="uid://bhcfubpbv1drw" path="res://scenes/inside/instrument_panel.tscn" id="2_ip"]
+[ext_resource type="PackedScene" path="res://scenes/eva/shuttle_helm_ui.tscn" id="3_ui"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_helm"]
+size = Vector3(1.1, 1.45, 0.25)
+
+[node name="ShuttleHelm" type="StaticBody3D"]
+script = ExtResource("1_helm")
+ui_scene = ExtResource("3_ui")
+shuttle_path = NodePath("../../Shuttle")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+shape = SubResource("BoxShape3D_helm")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+pixel_size = 0.003
+modulate = Color(0.4, 1, 0.55, 0)
+text = "E"
+font_size = 20
+outline_size = 1
+
+[node name="InstrumentPanel" parent="." instance=ExtResource("2_ip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)

@@ -4,18 +4,49 @@ extends Node
 ## Displays a UI scene in the local player's UILayer canvas layer.
 
 func show_ui(ui_scene: PackedScene) -> void:
+	_show_ui_impl(ui_scene, "", false)
+
+
+## Модальное UI: курсор, блок ввода/движения на локальном игроке до закрытия (tree_exited).
+func show_ui_for_local_player_with_block(ui_scene: PackedScene, interactable_target_path: String = "") -> void:
+	_show_ui_impl(ui_scene, interactable_target_path, true)
+
+
+func _show_ui_impl(ui_scene: PackedScene, interactable_target_path: String, with_modal_block: bool) -> void:
 	if ui_scene == null:
 		return
-	# Find the UILayer of the local (authority) player.
 	var ui_layer := _find_ui_layer()
 	if ui_layer == null:
-		push_warning("UIManager.show_ui: could not find UILayer for local player")
+		push_warning("UIManager: could not find UILayer for local player")
 		return
-	# Remove any previously opened UI in this layer.
-	for child in ui_layer.get_children():
-		child.queue_free()
-	var ui := ui_scene.instantiate()
+	# `queue_free` откладывает выход: новый child + старый в одном кадре портит modal/tree_exited.
+	for c: Node in ui_layer.get_children().duplicate():
+		c.free()
+	var ui: Node = ui_scene.instantiate()
+	if not interactable_target_path.is_empty() and ui.has_method("set_helm_target"):
+		ui.set_helm_target(interactable_target_path)
 	ui_layer.add_child(ui)
+	if not with_modal_block:
+		return
+	LocalPlayerFinder.set_modal_ui_block_for_authority_player(get_tree(), true)
+	# Godot 4.x: Object.CONNECT_ONE_SHOT
+	ui.tree_exited.connect(
+		_on_modal_interactable_ui_exited, Object.CONNECT_ONE_SHOT
+	)
+
+
+func _on_modal_interactable_ui_exited() -> void:
+	# После queue_free узла дерево может быть ещё невалидно в том же кадру.
+	call_deferred("_release_modal_player_block")
+
+
+func _release_modal_player_block() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	LocalPlayerFinder.set_modal_ui_block_for_authority_player(tree, false)
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_VISIBLE:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 
 func _find_ui_layer() -> CanvasLayer:
@@ -25,10 +56,9 @@ func _find_ui_layer() -> CanvasLayer:
 		var layer := game_scene.get_node_or_null("UILayer") as CanvasLayer
 		if layer:
 			return layer
-	# Fallback: find via the local player node.
-	for player: Node in get_tree().get_nodes_in_group("player"):
-		if player.is_multiplayer_authority():
-			var layer := player.get_node_or_null("MenuLayer") as CanvasLayer
-			if layer:
-				return layer
+	var player: Node = LocalPlayerFinder.authority_player(get_tree())
+	if player:
+		var layer := player.get_node_or_null("MenuLayer") as CanvasLayer
+		if layer:
+			return layer
 	return null

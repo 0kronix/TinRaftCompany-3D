@@ -9,15 +9,13 @@ const GAME_SCENE := "res://scenes/main.tscn"
 @onready var btn_solo:    Button   = $Center/Panel/VBox/BtnSolo
 @onready var status_label: Label   = $Center/Panel/VBox/StatusLabel
 
-var _network_manager: Node = null
 var _connect_timer: SceneTreeTimer = null
+
 
 func _ready() -> void:
 	# Always release the mouse when the lobby opens — it may have been captured
 	# during gameplay (MOUSE_MODE_CAPTURED prevents clicking/typing in UI).
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-
-	_network_manager = get_node_or_null("/root/NetworkManager")
 
 	var port: int = int(SettingsManager.data.get("port", 7777))
 	port_label.text = _t("Порт: ", "Port: ") + str(port)
@@ -26,18 +24,14 @@ func _ready() -> void:
 	btn_join.pressed.connect(_on_join_pressed)
 	btn_solo.pressed.connect(_on_solo_pressed)
 
-	if _network_manager:
-		_network_manager.session_started.connect(_on_session_started)
-		_network_manager.connection_failed.connect(_on_connection_failed)
+	NetworkManager.session_started.connect(_on_session_started)
+	NetworkManager.connection_failed.connect(_on_connection_failed)
 
 	_apply_style()
 
 func _on_host_pressed() -> void:
-	if _network_manager == null:
-		_set_status(_t("NetworkManager недоступен", "NetworkManager unavailable"), true)
-		return
 	var port: int = int(SettingsManager.data.get("port", 7777))
-	var err: Error = _network_manager.host(port)
+	var err: Error = NetworkManager.host(port)
 	if err != OK:
 		_set_status(_t("Ошибка хоста: ", "Host error: ") + str(err), true)
 		return
@@ -45,14 +39,11 @@ func _on_host_pressed() -> void:
 	# host() emits session_started synchronously, so do NOT call change_scene_to_file here.
 
 func _on_join_pressed() -> void:
-	if _network_manager == null:
-		_set_status(_t("NetworkManager недоступен", "NetworkManager unavailable"), true)
-		return
 	var ip := ip_input.text.strip_edges()
 	if ip.is_empty():
 		ip = "127.0.0.1"
 	var port: int = int(SettingsManager.data.get("port", 7777))
-	var err: Error = _network_manager.join(ip, port)
+	var err: Error = NetworkManager.join(ip, port)
 	if err != OK:
 		_set_status(_t("Ошибка подключения: ", "Connection error: ") + str(err), true)
 		return
@@ -79,8 +70,7 @@ func _on_connection_failed() -> void:
 
 func _on_connect_timeout() -> void:
 	_connect_timer = null
-	if _network_manager:
-		_network_manager.leave()
+	NetworkManager.leave()
 	_set_status(_t(
 		"Нет ответа от сервера (проверьте IP, порт и брандмауэр)",
 		"No response from server (check IP, port and firewall)"

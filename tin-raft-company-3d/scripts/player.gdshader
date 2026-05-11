@@ -38,11 +38,16 @@ void fragment() {
     // Ограничиваем UV координаты, чтобы не выходить за границы текстуры
     distorted_uv = clamp(distorted_uv, vec2(0.0), vec2(1.0));
     
-    // Хроматическая аберрация (с искривлёнными UV)
-    float r = texture(SCREEN_TEXTURE, distorted_uv + vec2(aberration_strength, 0.0)).r;
-    float g = texture(SCREEN_TEXTURE, distorted_uv).g;
-    float b = texture(SCREEN_TEXTURE, distorted_uv - vec2(aberration_strength, 0.0)).b;
-    vec3 color = vec3(r, g, b);
+    // Хроматическая аберрация — три выборки из SCREEN_TEXTURE; при слабом эффекте одна (дешевле на iGPU).
+    vec3 color;
+    if (aberration_strength < 0.0005) {
+        color = texture(SCREEN_TEXTURE, distorted_uv).rgb;
+    } else {
+        float r = texture(SCREEN_TEXTURE, distorted_uv + vec2(aberration_strength, 0.0)).r;
+        float g = texture(SCREEN_TEXTURE, distorted_uv).g;
+        float b = texture(SCREEN_TEXTURE, distorted_uv - vec2(aberration_strength, 0.0)).b;
+        color = vec3(r, g, b);
+    }
     
     // Сканлайны
     float scanline = sin(distorted_uv.y * scanline_count) * 0.5 + 0.5;

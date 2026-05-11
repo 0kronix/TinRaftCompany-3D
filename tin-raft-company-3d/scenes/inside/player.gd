@@ -32,7 +32,8 @@ func _setup_sync() -> void:
 	# В EVA head остаётся 0, но синхронизируем, чтобы плавно переключать режим у кукол.
 	config.add_property(NodePath("Head:rotation"))
 	sync.replication_config = config
-	sync.replication_interval = 1.0 / 20.0
+	# Было 30 Hz — куклы других игроков заметно «ступенчато» на 60 FPS дисплее.
+	sync.replication_interval = 1.0 / 60.0
 
 # --- ДВИЖЕНИЕ ---
 var SPEED        = 4.5
@@ -55,6 +56,8 @@ const EVA_SPEED_CAP: float = 60.0
 var current_hovered = null
 var inventory_open  := false
 var menu_open       := false
+## Кратковременно при модальном UI (E на интерактиве) — ввод/физика отключены.
+var modal_ui_block: bool = false
 var mouse_sensitivity: float = DEFAULT_MOUSE_SENSITIVITY
 var invert_mouse_y: bool     = false
 var _ping_label: Label = null
@@ -68,6 +71,10 @@ var _debug_warned_no_cam_method: bool = false
 
 
 func _ready() -> void:
+	## Слой совпадает с `Shuttle.INTERIOR_STATIC_LAYER` — шлюз на шаттле (дочерний StaticBody).
+	set_collision_mask_value(11, true)
+	if ray:
+		ray.set_collision_mask_value(11, true)
 	if is_multiplayer_authority():
 		_setup_local_player()
 	else:
@@ -112,8 +119,14 @@ func _setup_puppet() -> void:
 			node.queue_free()
 
 
+func set_modal_ui_block(v: bool) -> void:
+	modal_ui_block = v
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
+		return
+	if modal_ui_block:
 		return
 
 	if event.is_action_pressed("ui_close") and inventory_open:
@@ -143,13 +156,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			head.rotate_x(y_delta2 * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
 
-	# --- ВЗАИМОДЕЙСТВИЕ ---
-	if event.is_action_pressed("interact"):
-		_try_interact()
-
 
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
+		return
+	if modal_ui_block:
+		velocity = Vector3.ZERO
+		eva_jetpack_thrust_strength = 0.0
+		eva_jetpack_thrust_dir = Vector3.ZERO
 		return
 	if not eva_mode:
 		eva_jetpack_thrust_strength = 0.0
@@ -158,8 +172,14 @@ func _physics_process(delta: float) -> void:
 		_physics_process_eva(delta)
 	else:
 		_physics_process_interior(delta)
+	_sync_eva_camera_physics_hints()
+	if not menu_open and not inventory_open:
+		if Input.is_action_just_pressed("interact"):
+			_try_interact()
 
-	# head_bob: get() с узла с GDScript-полями не гарантирует eva/tягу — передаём явно раз в физ-кадр
+
+func _sync_eva_camera_physics_hints() -> void:
+	## head_bob: передаём eva/thrust явно каждый физкадр
 	if not is_instance_valid(camera):
 		if not _debug_warned_no_cam_method:
 			push_error("[Player EvaHeadBob] $Head/Camera3D нет (camera=null)")
@@ -183,6 +203,7 @@ func _physics_process(delta: float) -> void:
 				snappedf(velocity.length(), 0.01),
 				")"
 			)
+
 
 func _physics_process_interior(delta: float) -> void:
 	if menu_open:
@@ -264,6 +285,7 @@ func _update_hover() -> void:
 
 
 func _try_interact() -> void:
+	ray.force_raycast_update()
 	if not ray.is_colliding():
 		return
 	var obj = ray.get_collider()
@@ -273,9 +295,7 @@ func _try_interact() -> void:
 		return
 	if obj.has_method("build_interaction_command"):
 		var command: Dictionary = obj.build_interaction_command()
-		var nm := get_node_or_null("/root/NetworkManager")
-		if nm:
-			nm.request_command(self, command)
+		NetworkManager.request_command(self, command)
 	else:
 		# Fallback for objects without the command pattern.
 		obj.interact(self)
@@ -365,19 +385,20 @@ func _update_ping() -> void:
 		_ping_label.visible = false
 		return
 	_ping_label.visible = true
-	var mp_peer := multiplayer.multiplayer_peer
-	if mp_peer == null or mp_peer is OfflineMultiplayerPeer:
+	if not MultiplayerRuntime.has_active_session_for(self):
 		_ping_label.text = ""
 		return
 	if multiplayer.is_server():
 		_ping_label.text = "HOST"
 		return
-	var enet_peer := mp_peer as ENetMultiplayerPeer
+	var enet_peer := multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	if enet_peer == null:
 		return
 	var server_conn := enet_peer.get_peer(1)
 	if server_conn == null:
 		return
+	# ENet PEER_ROUND_TRIP_TIME — не ICMP: сглаженный RTT по служебным пакетам. Растёт от очереди reliable,
+	# загрузки главного потока и задержек рендера (GPU ~100% → кадры длиннее → обработка сети позже).
 	var rtt: int = roundi(server_conn.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME))
 	var color: Color
 	if rtt < 60:

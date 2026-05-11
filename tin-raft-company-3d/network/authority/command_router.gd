@@ -10,7 +10,7 @@ func execute_command(actor: Node3D, command: Dictionary) -> bool:
 		return false
 
 	if target.has_method("server_apply_interaction"):
-		return target.server_apply_interaction(actor)
+		return target.server_apply_interaction(actor, command)
 
 	return false
 
@@ -20,9 +20,4 @@ func _resolve_target(actor: Node3D, command: Dictionary) -> Node:
 	var tree := actor.get_tree()
 	if tree == null:
 		return null
-	var nm: Node = tree.root.get_node_or_null("NetworkManager")
-	if nm and nm.has_method("_resolve_command_target_node"):
-		var t: Node = nm._resolve_command_target_node(command.get("target_path"))
-		if t and is_instance_valid(t):
-			return t
-	return tree.root.get_node_or_null(NodePath(String(command.get("target_path", ""))))
+	return MultiplayerNodeResolver.resolve(tree, command.get("target_path"))

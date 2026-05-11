@@ -1,78 +1,18 @@
 [gd_scene format=3 uid="uid://c6on4q0ua0ayf"]
 
-[ext_resource type="PackedScene" uid="uid://cqi7ifwvg413a" path="res://scenes/inside/capsule.tscn" id="1_sugp2"]
-[ext_resource type="PackedScene" uid="uid://dk3npfd2tkanp" path="res://scenes/inside/interactable_object.tscn" id="2_jyhfs"]
-[ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="3_jyhfs"]
-[ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="6_tefeu"]
-[ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="7_o6xl0"]
-[ext_resource type="PackedScene" uid="uid://bhcfubpbv1drw" path="res://scenes/inside/instrument_panel.tscn" id="8_ip"]
 [ext_resource type="Script" uid="uid://b65trsu7vc0ts" path="res://scenes/inside/world_manager.gd" id="9_wm"]
-[ext_resource type="PackedScene" uid="uid://ck6205r44kcyg" path="res://scenes/inside/airlock.tscn" id="10_al"]
-[ext_resource type="PackedScene" path="res://scenes/eva/eva_zone.tscn" id="11_eva"]
+[ext_resource type="PackedScene" uid="uid://di2y3c3erx57x" path="res://scenes/eva/eva_zone.tscn" id="11_eva"]
 
-[node name="Inside" type="Node3D" unique_id=1032035784]
+[node name="Inside" type="Node3D" unique_id=237176115]
 script = ExtResource("9_wm")
 
-[node name="EVA" parent="." unique_id=1218718461 instance=ExtResource("11_eva")]
+[node name="EVA" parent="." unique_id=2087168387 instance=ExtResource("11_eva")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.567353)
 
-[node name="Border" parent="." unique_id=495489639 instance=ExtResource("1_sugp2")]
-transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
-
-[node name="InteractableObject" parent="Border" unique_id=2042901232 instance=ExtResource("2_jyhfs")]
-transform = Transform3D(0.84690994, -0.0007189749, -0.5317365, 0.0015534024, 0.99999845, 0.001122019, 0.53173465, -0.0017762488, 0.8469096, 4.4946065, 0.9833138, -4.6446953)
-ui_scene = ExtResource("3_jyhfs")
-
-[node name="InteractableObject2" parent="Border" unique_id=1092593932 instance=ExtResource("2_jyhfs")]
-transform = Transform3D(0.99960214, 6.141818e-05, 0.028235497, -5.924405e-05, 1.0000007, -7.7802455e-05, -0.028235521, 7.6098135e-05, 0.99960196, 0.2948803, 0.9944855, -4.7728643)
-ui_scene = ExtResource("3_jyhfs")
-
-[node name="UILayer" type="CanvasLayer" parent="." unique_id=80976571]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=425099980]
 layer = 10
 
-[node name="IronOre" parent="." unique_id=236560782 instance=ExtResource("7_o6xl0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.6907731)
-mass = 0.01
+[node name="WorldObjects" type="Node3D" parent="." unique_id=1295236433]
 
-[node name="IronOre2" parent="." unique_id=1568912382 instance=ExtResource("7_o6xl0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.802047, -0.6)
-
-[node name="IronOre3" parent="." unique_id=1826131117 instance=ExtResource("7_o6xl0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.802047, 1.3)
-
-[node name="IronOre4" parent="." unique_id=631735774 instance=ExtResource("7_o6xl0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.802047, -0.4)
-
-[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("6_tefeu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, -2.1868458)
-debris_scene = ExtResource("7_o6xl0")
-
-[node name="Asteroid2" parent="." unique_id=62590085 instance=ExtResource("6_tefeu")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.677394, 1.900154, 1.9179773)
-debris_scene = ExtResource("7_o6xl0")
-
-[node name="StatusPanel" parent="." unique_id=2042589497 instance=ExtResource("8_ip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.959115, 1.5, -4.5)
-
-[node name="PowerPanel" parent="." unique_id=1869246745 instance=ExtResource("8_ip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1082118, 1.5, -4.5)
-
-[node name="SensorPanel" parent="." unique_id=1906298228 instance=ExtResource("8_ip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72062695, 1.5, -4.5)
-
-[node name="EvaAirlock" parent="." unique_id=906417362 instance=ExtResource("10_al")]
-transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 3.1, 1.2, -4.7)
-
-[node name="PlayerContainer" type="Node3D" parent="." unique_id=500000001]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4390545, 0)
-
-[node name="PlayerSpawner" type="MultiplayerSpawner" parent="PlayerContainer" unique_id=500000002]
-spawn_path = NodePath("..")
-
-[node name="CapsuleReturn" type="Marker3D" parent="PlayerContainer" unique_id=500000005 groups=["capsule_return"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0.6491871, 1.97)
-
-[node name="WorldObjects" type="Node3D" parent="." unique_id=500000003]
-
-[node name="WorldSpawner" type="MultiplayerSpawner" parent="WorldObjects" unique_id=500000004]
+[node name="WorldSpawner" type="MultiplayerSpawner" parent="WorldObjects" unique_id=378156730]
 spawn_path = NodePath("..")

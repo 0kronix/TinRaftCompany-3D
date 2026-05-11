@@ -1,4 +1,4 @@
-extends "res://scenes/network/replicated_rigidbody.gd"
+extends NetworkReplicatedRigidBody
 
 @export var item_data: ItemResource
 @export var count: int = 1
@@ -12,8 +12,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
-	label.modulate         = Color(1, 1, 1, 0)
-	label.outline_modulate = Color(0, 0, 0, 0)
+	Label3DHint.prepare_hidden(label)
 
 
 func _ensure_stable_name() -> void:
@@ -25,22 +24,16 @@ func _ensure_stable_name() -> void:
 
 
 func show_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a",         1.0, 0.15)
-	tween.tween_property(label, "outline_modulate:a", 1.0, 0.15)
+	Label3DHint.tween_show(self, label)
 
 
 func hide_hint() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(label, "modulate:a",         0.0, 0.1)
-	tween.tween_property(label, "outline_modulate:a", 0.0, 0.1)
+	Label3DHint.tween_hide(self, label)
 
 
 func interact(caller: Node3D) -> void:
 	var command := build_interaction_command()
-	var nm := get_node_or_null("/root/NetworkManager")
-	if nm:
-		nm.request_command(caller, command)
+	NetworkManager.request_command(caller, command)
 
 
 func build_interaction_command() -> Dictionary:
@@ -60,13 +53,12 @@ func server_validate_interaction(actor: Node3D) -> bool:
 	return inventory != null and hotbar != null and item_data != null and count > 0
 
 
-func server_apply_interaction(actor: Node3D) -> bool:
+func server_apply_interaction(actor: Node3D, _command: Dictionary = {}) -> bool:
 	var inventory := actor.get_node_or_null("InventoryComponent")
-	var nm        := get_node_or_null("/root/NetworkManager")
 
 	if inventory == null:
 		# Server-authoritative path: proxy actor (client-initiated pickup).
-		_despawn_server(nm)
+		_despawn_server()
 		return true
 
 	# Local path: singleplayer or server-host's own player.
@@ -74,7 +66,7 @@ func server_apply_interaction(actor: Node3D) -> bool:
 	if hotbar == null:
 		return false
 	if inventory.add_item(item_data, count, hotbar.active_slot):
-		_despawn_server(nm)
+		_despawn_server()
 		return true
 	return false
 
@@ -84,9 +76,9 @@ func server_apply_interaction(actor: Node3D) -> bool:
 ## broadcasting the despawn automatically when queue_free() is called.
 ## Static scene nodes (direct children of Inside) are NOT tracked by the
 ## spawner, so NetworkManager must broadcast their removal manually.
-func _despawn_server(nm: Node) -> void:
-	var world_objects := get_node_or_null("/root/Inside/WorldObjects")
+func _despawn_server() -> void:
+	var world_objects := GameScenePaths.get_world_objects_node(get_tree())
 	var spawner_managed := world_objects != null and get_parent() == world_objects
-	if not spawner_managed and nm and nm.is_session_active():
-		nm.notify_node_despawned(self)
+	if not spawner_managed and NetworkManager.is_session_active():
+		NetworkManager.notify_node_despawned(self)
 	queue_free()

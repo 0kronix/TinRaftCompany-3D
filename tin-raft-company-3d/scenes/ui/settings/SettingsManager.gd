@@ -21,8 +21,9 @@ var data := {
 	# Экран
 	"resolution":    0,
 	"window_mode":   0,
-	"fps_limit":     0,
-	"vsync":         false,
+	# 0 = без лимита (разгоняет GPU даже на пустом лобби); 1 = 60, 2 = 120, 3 = 144 — см. fps_map в _apply_display.
+	"fps_limit":     1,
+	"vsync":         true,
 	"quality":       1,
 	"aa_mode":       2,
 	"view_distance": 70.0,
@@ -70,6 +71,8 @@ func _ready() -> void:
 	_defaults = data.duplicate(true)
 	load_settings()
 	apply_all()
+	# После change_scene_to_file драйвер/окно иногда сбрасывают pacing — повторяем лимит FPS и VSync.
+	get_tree().scene_changed.connect(_on_main_scene_changed)
 
 func save() -> void:
 	var cfg := ConfigFile.new()
@@ -104,6 +107,25 @@ func _apply_audio() -> void:
 	_apply_bus_volume_if_exists("Radio", data["vol_radio"] / 100.0)
 	_apply_bus_volume_if_exists("Static", data["vol_static"] / 100.0)
 
+func _on_main_scene_changed() -> void:
+	call_deferred("_apply_frame_pacing")
+
+
+## VSync + Engine.max_fps — вызывать после смены сцены (лобби ↔ мир), чтобы лимит действовал в игре.
+func _apply_frame_pacing() -> void:
+	var vsync_mode := DisplayServer.VSYNC_ENABLED if bool(data.get("vsync", true)) \
+					  else DisplayServer.VSYNC_DISABLED
+	DisplayServer.window_set_vsync_mode(vsync_mode)
+
+	var fps_map: Array = [0, 60, 120, 144]
+	var fps_index: int = clampi(int(data.get("fps_limit", 1)), 0, fps_map.size() - 1)
+	var limit: int = int(fps_map[fps_index])
+	# Без VSync и без лимита движок гоняет тысячи FPS даже на пустом лобби → GPU 100% впустую.
+	if limit == 0 and not bool(data.get("vsync", true)):
+		limit = 120
+	Engine.max_fps = limit
+
+
 func _apply_display() -> void:
 	var modes := [
 		DisplayServer.WINDOW_MODE_WINDOWED,
@@ -112,10 +134,6 @@ func _apply_display() -> void:
 	]
 	var mode_index: int = clampi(int(data["window_mode"]), 0, modes.size() - 1)
 	DisplayServer.window_set_mode(modes[mode_index])
-
-	var vsync_mode := DisplayServer.VSYNC_ENABLED if data["vsync"] \
-					  else DisplayServer.VSYNC_DISABLED
-	DisplayServer.window_set_vsync_mode(vsync_mode)
 
 	var resolutions := [
 		Vector2i(1280, 720),
@@ -127,9 +145,7 @@ func _apply_display() -> void:
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
 		DisplayServer.window_set_size(resolutions[resolution_index])
 
-	var fps_map := [0, 60, 120, 144]
-	var fps_index: int = clampi(int(data["fps_limit"]), 0, fps_map.size() - 1)
-	Engine.max_fps = fps_map[fps_index]
+	_apply_frame_pacing()
 
 func _apply_keybinds() -> void:
 	var mapping := {
@@ -162,21 +178,19 @@ func _apply_language() -> void:
 	TranslationServer.set_locale(SUPPORTED_LANGUAGES[language_index])
 
 func _apply_network() -> void:
-	var network_manager := get_node_or_null("/root/NetworkManager")
-	if network_manager and network_manager.has_method("apply_runtime_settings"):
-		network_manager.apply_runtime_settings({
-			"net_mode": data["net_mode"],
-			"port": data["port"],
-			"max_players": data["max_players"],
-			"voice_mode": data["voice_mode"],
-			"mic_threshold": data["mic_threshold"],
-			"noise_suppress": data["noise_suppress"],
-			"lobby_visible": data["lobby_visible"],
-			"lobby_name": data["lobby_name"],
-			"region": data["region"],
-			"show_ping": data["show_ping"],
-			"net_log": data["net_log"],
-		})
+	NetworkManager.apply_runtime_settings({
+		"net_mode": data["net_mode"],
+		"port": data["port"],
+		"max_players": data["max_players"],
+		"voice_mode": data["voice_mode"],
+		"mic_threshold": data["mic_threshold"],
+		"noise_suppress": data["noise_suppress"],
+		"lobby_visible": data["lobby_visible"],
+		"lobby_name": data["lobby_name"],
+		"region": data["region"],
+		"show_ping": data["show_ping"],
+		"net_log": data["net_log"],
+	})
 
 func get_mouse_sensitivity() -> float:
 	return float(data.get("mouse_sens", 0.003))
