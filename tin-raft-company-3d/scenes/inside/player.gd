@@ -60,7 +60,10 @@ var menu_open       := false
 var modal_ui_block: bool = false
 var mouse_sensitivity: float = DEFAULT_MOUSE_SENSITIVITY
 var invert_mouse_y: bool     = false
+var _ping_row: HBoxContainer = null
 var _ping_label: Label = null
+var _ping_tx_dot: Panel = null
+var _ping_tx_style: StyleBoxFlat = null
 ## 0..1, сила ввода джетпака (только в EVA) — для камеры / тряски
 var eva_jetpack_thrust_strength: float = 0.0
 ## Нормализованное направление тяги в локале тела (как `wish`) — для тряски камеры вдоль тяги
@@ -113,7 +116,7 @@ func _setup_puppet() -> void:
 	if camera:
 		camera.current = false
 	# Remove UI layers — puppets don't need HUD, inventory, menu, or shader overlay.
-	for layer_name: String in ["HotbarLayer", "MenuLayer", "ShaiderLayer"]:
+	for layer_name: String in ["UILayer", "MenuLayer", "ShaiderLayer"]:
 		var node := get_node_or_null(layer_name)
 		if node:
 			node.queue_free()
@@ -157,6 +160,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
 
 func _physics_process(delta: float) -> void:
+	if is_multiplayer_authority():
+		_update_voice_tx_dot()
 	if not is_multiplayer_authority():
 		return
 	if modal_ui_block:
@@ -348,26 +353,45 @@ func _apply_control_settings() -> void:
 
 
 func _setup_ping_display() -> void:
-	var hud_layer := get_node_or_null("HotbarLayer") as CanvasLayer
+	var hud_layer := get_node_or_null("UILayer") as CanvasLayer
 	if hud_layer == null:
 		return
+	_ping_row = HBoxContainer.new()
+	_ping_row.name = "PingRow"
+	_ping_row.alignment = BoxContainer.ALIGNMENT_END
+	_ping_row.anchor_left = 1.0
+	_ping_row.anchor_right = 1.0
+	_ping_row.anchor_top = 0.0
+	_ping_row.anchor_bottom = 0.0
+	_ping_row.offset_left = -150.0
+	_ping_row.offset_right = -10.0
+	_ping_row.offset_top = 8.0
+	_ping_row.offset_bottom = 36.0
+	_ping_row.add_theme_constant_override("separation", 8)
+	_ping_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 	_ping_label = Label.new()
 	_ping_label.name = "PingLabel"
-	_ping_label.anchor_left   = 1.0
-	_ping_label.anchor_right  = 1.0
-	_ping_label.anchor_top    = 0.0
-	_ping_label.anchor_bottom = 0.0
-	_ping_label.offset_left   = -110.0
-	_ping_label.offset_right  = -10.0
-	_ping_label.offset_top    = 10.0
-	_ping_label.offset_bottom = 34.0
-	_ping_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_ping_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_ping_label.add_theme_font_size_override("font_size", 13)
 	_ping_label.add_theme_color_override("font_color", Color(0.8, 1.0, 0.8))
 	_ping_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_ping_label.add_theme_constant_override("shadow_offset_x", 1)
 	_ping_label.add_theme_constant_override("shadow_offset_y", 1)
-	hud_layer.add_child(_ping_label)
+	_ping_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_ping_tx_dot = Panel.new()
+	_ping_tx_dot.name = "VoiceTxDot"
+	_ping_tx_dot.custom_minimum_size = Vector2(10, 10)
+	_ping_tx_style = StyleBoxFlat.new()
+	_ping_tx_style.bg_color = Color(0.22, 0.22, 0.26)
+	_ping_tx_style.set_corner_radius_all(5)
+	_ping_tx_dot.add_theme_stylebox_override("panel", _ping_tx_style)
+	_ping_tx_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	_ping_row.add_child(_ping_label)
+	_ping_row.add_child(_ping_tx_dot)
+	hud_layer.add_child(_ping_row)
 	_update_ping()
 	var timer := Timer.new()
 	timer.wait_time = 1.0
@@ -377,13 +401,13 @@ func _setup_ping_display() -> void:
 
 
 func _update_ping() -> void:
-	if _ping_label == null or not is_instance_valid(_ping_label):
+	if _ping_row == null or not is_instance_valid(_ping_row):
 		return
-	var show_ping: bool = SettingsManager.data.get("show_ping", false)
+	var show_ping: bool = bool(SettingsManager.data.get("show_ping", true))
 	if not show_ping:
-		_ping_label.visible = false
+		_ping_row.visible = false
 		return
-	_ping_label.visible = true
+	_ping_row.visible = true
 	if not MultiplayerRuntime.has_active_session_for(self):
 		_ping_label.text = ""
 		return
@@ -408,6 +432,18 @@ func _update_ping() -> void:
 		color = Color(1.0, 0.3, 0.3)
 	_ping_label.add_theme_color_override("font_color", color)
 	_ping_label.text = "%d ms" % rtt
+
+
+func _update_voice_tx_dot() -> void:
+	if _ping_tx_style == null or _ping_tx_dot == null or not is_instance_valid(_ping_tx_dot):
+		return
+	if _ping_row != null and is_instance_valid(_ping_row) and not _ping_row.visible:
+		return
+	var vm := get_node_or_null("/root/VoiceManager")
+	var active: bool = false
+	if vm != null and vm.has_method("is_local_voice_transmitting"):
+		active = vm.is_local_voice_transmitting()
+	_ping_tx_style.bg_color = Color(0.35, 0.92, 0.45) if active else Color(0.22, 0.22, 0.26)
 
 
 ## Сброс скорости и «верха» после телепорта шлюзом (NetworkManager).
