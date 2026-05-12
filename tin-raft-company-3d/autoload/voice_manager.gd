@@ -8,16 +8,15 @@ const VOICE_HEADER_SIZE := 5
 
 const OPUS_SAMPLE_RATE := 48000
 const OPUS_CHANNELS := 1
-const OPUS_CHUNK_SIZE := 480
-const OPUS_BITRATE := 56000
+## 20 ms кадр @ 48 kHz (как twovoip) — меньше срывов декодера, чем 10 ms при том же битрейте.
+const OPUS_CHUNK_SIZE := 960
+const OPUS_BITRATE := 64000
 const OPUS_COMPLEXITY := 5
 
-## Канал сырых байт Godot multiplayer (как в рабочей версии; канал 2 у части пиров не доходит до peer_packet).
+## Канал сырых байт (канал 2 у части пиров не приходит в peer_packet).
 const VOICE_NET_CHANNEL := 1
-## Небольшая очередь; при «хвосте» срезаем до LIVE_KEEP, чтобы не тянуть задержку.
-const VOICE_QUEUE_MAX_FRAMES := 8
-const VOICE_FORCE_LIVE_FRAMES := 6
-const VOICE_FORCE_LIVE_KEEP := 3
+## Только FIFO-лимит: «срез до N кадров» давал потери → PLC Opus → шипение и «залипание» по времени.
+const VOICE_QUEUE_MAX_FRAMES := 24
 var opus_encoder: TwovoipOpusEncoder
 
 var cached_mode := 0
@@ -55,6 +54,8 @@ func _ready() -> void:
 
 	multiplayer.peer_packet.connect(_on_peer_packet)
 	set_physics_process(true)
+	# Раньше остальных узлов: быстрее снимаем очередь после peer_packet (меньше хвост задержки).
+	process_priority = -1000
 
 
 func _is_voice_network_ready() -> bool:
@@ -162,7 +163,7 @@ func _process(_delta: float) -> void:
 		if not ptt_active:
 			return
 		opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, cached_denoise, false)
-		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
+		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 0.95)
 		if packet.size() > 0:
 			send_voice_packet(packet)
 	else:
@@ -172,7 +173,7 @@ func _process(_delta: float) -> void:
 
 		if is_transmitting:
 			opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, cached_denoise, false)
-			var vox_packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 1.0)
+			var vox_packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 0.95)
 			if vox_packet.size() > 0:
 				send_voice_packet(vox_packet)
 			if vox_instant < cached_threshold:
@@ -227,6 +228,7 @@ func _on_peer_packet(from_peer_id: int, packet: PackedByteArray) -> void:
 			multiplayer.send_bytes(packet, pid, MultiplayerPeer.TRANSFER_MODE_UNRELIABLE, VOICE_NET_CHANNEL)
 
 	_process_voice_packet(speaker_id, opus_payload)
+	_drain_voice_receive_queues()
 
 
 func _process_voice_packet(speaker_id: int, data: PackedByteArray) -> void:
@@ -239,9 +241,6 @@ func _process_voice_packet(speaker_id: int, data: PackedByteArray) -> void:
 	q.append(data)
 	while q.size() > VOICE_QUEUE_MAX_FRAMES:
 		q.pop_front()
-	if q.size() >= VOICE_FORCE_LIVE_FRAMES:
-		while q.size() > VOICE_FORCE_LIVE_KEEP:
-			q.pop_front()
 
 
 func _drain_voice_receive_queues() -> void:
