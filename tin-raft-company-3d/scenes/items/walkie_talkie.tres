@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemResource" format=3]
+
+[ext_resource type="Texture2D" uid="uid://bp0ing3f6osxx" path="res://arts/Diamond_Ore_(texture)_JE5_BE5.webp" id="1_icon"]
+[ext_resource type="Script" uid="uid://dqm87k1n0b77x" path="res://scenes/items/ItemResource.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+id = "walkie_talkie"
+display_name = "Рация"
+description = "Возьми в активный слот хотбара и зажми ЛКМ — тебя слышно далеко (как по рации, с искажением)."
+icon = ExtResource("1_icon")
+max_stack = 1
+mass = 0.35
+is_walkie_talkie = true

@@ -164,7 +164,8 @@ func _ready() -> void:
 		_command_router,
 		Callable(self, "send_grant_pickup_to_peer"),
 		Callable(self, "send_airlock_teleport_to_peer"),
-		Callable(self, "send_open_interactable_ui_to_peer")
+		Callable(self, "send_open_interactable_ui_to_peer"),
+		Callable(self, "send_shuttle_tether_toggle_to_peer")
 	)
 
 
@@ -261,6 +262,8 @@ func request_command(actor: Node3D, command: Dictionary) -> bool:
 	if ok:
 		if AirlockTeleportService.should_apply_local_after_command(command):
 			AirlockTeleportService.apply(self, String(command.get("type", "")))
+		if ShuttleTetherService.should_apply_local_after_command(command):
+			ShuttleTetherService.apply(self, command.get("target_path"))
 		_commands.open_interactable_ui_for_initiator(multiplayer.get_unique_id(), command)
 	return ok
 
@@ -284,6 +287,10 @@ func send_airlock_teleport_to_peer(peer_id: int, teleport_type: String) -> void:
 
 func send_open_interactable_ui_to_peer(peer_id: int, res_path: String, target_path_str: String) -> void:
 	_rpc_open_interactable_ui.rpc_id(peer_id, res_path, target_path_str)
+
+
+func send_shuttle_tether_toggle_to_peer(peer_id: int, target_path_str: String) -> void:
+	_rpc_shuttle_tether_toggle.rpc_id(peer_id, target_path_str)
 
 
 @rpc("authority", "reliable")
@@ -346,6 +353,51 @@ func _resolve_command_target_node(path_variant) -> Node:
 @rpc("authority", "reliable")
 func _rpc_airlock_teleport(teleport_type: String) -> void:
 	AirlockTeleportService.apply(self, teleport_type)
+
+
+@rpc("authority", "reliable")
+func _rpc_shuttle_tether_toggle(target_path_str: String) -> void:
+	ShuttleTetherService.apply(self, target_path_str)
+
+
+## Полилиния троса EVA (мировые координаты): владелец шлёт ~20–30 Гц, остальные рисуют куклу.
+func publish_shuttle_tether_rope_polyline(author_peer_id: int, points_world: PackedVector3Array) -> void:
+	if not MultiplayerRuntime.has_active_session_for(self):
+		return
+	if not is_session_active():
+		return
+	if multiplayer.is_server():
+		_apply_shuttle_tether_rope_visual_local(author_peer_id, points_world)
+		_rpc_shuttle_tether_rope_visual.rpc(author_peer_id, points_world)
+	else:
+		_rpc_shuttle_tether_rope_upload.rpc_id(1, author_peer_id, points_world)
+
+
+@rpc("any_peer", "unreliable")
+func _rpc_shuttle_tether_rope_upload(author_peer_id: int, points_world: PackedVector3Array) -> void:
+	if not multiplayer.is_server():
+		return
+	var from_id: int = multiplayer.get_remote_sender_id()
+	if from_id != author_peer_id:
+		return
+	_apply_shuttle_tether_rope_visual_local(author_peer_id, points_world)
+	_rpc_shuttle_tether_rope_visual.rpc(author_peer_id, points_world)
+
+
+@rpc("authority", "unreliable")
+func _rpc_shuttle_tether_rope_visual(author_peer_id: int, points_world: PackedVector3Array) -> void:
+	if multiplayer.get_unique_id() == author_peer_id:
+		return
+	_apply_shuttle_tether_rope_visual_local(author_peer_id, points_world)
+
+
+func _apply_shuttle_tether_rope_visual_local(author_peer_id: int, points_world: PackedVector3Array) -> void:
+	if multiplayer.get_unique_id() == author_peer_id:
+		return
+	var path_str: String = GameScenePaths.player_puppet_path_str(author_peer_id)
+	var node: Node = get_tree().root.get_node_or_null(path_str)
+	if node != null and node.has_method("apply_shuttle_tether_rope_visual"):
+		node.apply_shuttle_tether_rope_visual(points_world)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

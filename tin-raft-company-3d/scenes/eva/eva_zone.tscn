@@ -10,7 +10,9 @@
 [ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="9_ctrl"]
 [ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="10_ast"]
 [ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="11_ore"]
+[ext_resource type="PackedScene" path="res://scenes/items/walkie_talkie_radio.tscn" id="14_radio"]
 [ext_resource type="PackedScene" uid="uid://bhcfubpbv1drw" path="res://scenes/inside/instrument_panel.tscn" id="12_ip"]
+[ext_resource type="PackedScene" path="res://scenes/eva/shuttle_tether_module.tscn" id="13_teth"]
 
 [node name="EvaZone" type="Node3D" unique_id=505347578]
 
@@ -32,6 +34,10 @@ mass = 0.01
 [node name="IronOre4" parent="ShipInterior" unique_id=964945681 instance=ExtResource("11_ore")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.802047, -0.4)
 mass = 0.01
+
+[node name="WalkieRadio" parent="ShipInterior" instance=ExtResource("14_radio")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.802047, 1.95)
+mass = 0.08
 
 [node name="Asteroid" parent="ShipInterior" unique_id=995466423 instance=ExtResource("10_ast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, -2.1868458)
@@ -80,6 +86,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0.6491871, 1.97)
 
 [node name="Shuttle" parent="." unique_id=683908050 instance=ExtResource("2_shu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.080631)
+
+[node name="ShuttleTetherModule" parent="Shuttle" unique_id=9001001 instance=ExtResource("13_teth")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -1.85, 0.42, 0.85)
 
 [node name="Asteroids" parent="Shuttle" unique_id=2087162624 instance=ExtResource("3_asp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.910014)

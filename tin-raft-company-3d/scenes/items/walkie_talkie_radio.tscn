@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/WorldItem.gd" id="1_wi"]
+[ext_resource type="Resource" path="res://scenes/items/walkie_talkie.tres" id="2_item"]
+[ext_resource type="Script" path="res://scenes/items/label_3d.gd" id="3_lbl"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_radio"]
+albedo_color = Color(0.22, 0.24, 0.28, 1)
+metallic = 0.55
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+material = SubResource("StandardMaterial3D_radio")
+size = Vector3(0.16, 0.34, 0.055)
+
+[sub_resource type="BoxShape3D" id="BoxShape_body"]
+size = Vector3(0.2, 0.38, 0.09)
+
+[node name="WalkieRadio" type="RigidBody3D"]
+mass = 0.08
+script = ExtResource("1_wi")
+item_data = ExtResource("2_item")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_body")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape_body")
+
+[node name="RemoteTransform3D" type="RemoteTransform3D" parent="."]
+remote_path = NodePath("..")
+update_rotation = false
+
+[node name="Label3D" type="Label3D" parent="RemoteTransform3D"]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0.46, 0)
+billboard = 1
+text = "E — Рация"
+script = ExtResource("3_lbl")

@@ -9,6 +9,7 @@ var _router: CommandRouter
 var _send_grant_pickup: Callable
 var _send_airlock_teleport: Callable
 var _send_open_interactable_ui: Callable
+var _send_shuttle_tether_toggle: Callable
 
 
 func _init(
@@ -17,7 +18,8 @@ func _init(
 	router: CommandRouter,
 	send_grant_pickup_rpc: Callable,
 	send_airlock_teleport_rpc: Callable,
-	send_open_interactable_ui_rpc: Callable
+	send_open_interactable_ui_rpc: Callable,
+	send_shuttle_tether_toggle_rpc: Callable
 ) -> void:
 	_host = host_node
 	_rules = rules
@@ -25,6 +27,7 @@ func _init(
 	_send_grant_pickup = send_grant_pickup_rpc
 	_send_airlock_teleport = send_airlock_teleport_rpc
 	_send_open_interactable_ui = send_open_interactable_ui_rpc
+	_send_shuttle_tether_toggle = send_shuttle_tether_toggle_rpc
 
 
 func emit_rejected(command: Dictionary, reason: String) -> void:
@@ -78,6 +81,8 @@ func process_forwarded_command(sender_id: int, actor_pos: Vector3, command: Dict
 
 	if ok and command.get("type", "") in ["airlock_exit", "airlock_return"]:
 		_send_airlock_teleport.call(sender_id, String(command.get("type", "")))
+	if ok and command.get("type", "") == "shuttle_tether_toggle":
+		_send_shuttle_tether_toggle.call(sender_id, str(command.get("target_path", "")))
 	if ok:
 		open_interactable_ui_for_initiator(sender_id, command)
 

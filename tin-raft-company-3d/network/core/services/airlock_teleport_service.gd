@@ -30,6 +30,21 @@ static func apply(host: Node, teleport_type: String) -> void:
 		p.eva_mode = false
 	if p.has_method("align_after_airlock_teleport"):
 		p.align_after_airlock_teleport(teleport_type == "airlock_exit")
+	if teleport_type == "airlock_exit":
+		_apply_shuttle_velocity_to_player(tree, p)
+
+
+static func _apply_shuttle_velocity_to_player(tree: SceneTree, p: CharacterBody3D) -> void:
+	var shuttle: RigidBody3D = tree.root.get_node_or_null(GameScenePaths.EVA_SHUTTLE) as RigidBody3D
+	if shuttle == null:
+		return
+	var w: Vector3 = shuttle.angular_velocity
+	var r: Vector3 = p.global_position - shuttle.global_position
+	var v: Vector3 = shuttle.linear_velocity + w.cross(r)
+	const V_MAX := 200.0
+	if v.length_squared() > V_MAX * V_MAX:
+		v = v.normalized() * V_MAX
+	p.velocity = v
 
 
 static func find_local_authority_player(tree: SceneTree, mp: MultiplayerAPI) -> CharacterBody3D:

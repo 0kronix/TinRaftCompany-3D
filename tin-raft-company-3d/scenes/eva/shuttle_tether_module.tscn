@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://ceylmi3fw4yjt"]
+
+[ext_resource type="Script" uid="uid://bdo7itsdo0wmw" path="res://scenes/eva/shuttle_tether_module.gd" id="1_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_panel"]
+size = Vector3(0.55, 0.35, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="Mat_panel"]
+albedo_color = Color(0.35, 0.42, 0.48, 1)
+metallic = 0.55
+roughness = 0.45
+
+[sub_resource type="BoxShape3D" id="BoxShape_panel"]
+size = Vector3(0.55, 0.35, 0.12)
+
+[node name="ShuttleTetherModule" type="StaticBody3D" unique_id=2132228319]
+script = ExtResource("1_script")
+tether_slack_ratio = 0.45
+tether_spring = 1.0
+tether_rope_segments = 32
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1858117378]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.175, 0)
+mesh = SubResource("BoxMesh_panel")
+surface_material_override/0 = SubResource("Mat_panel")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1504190850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.175, 0)
+shape = SubResource("BoxShape_panel")
+
+[node name="CableAnchor" type="Marker3D" parent="." unique_id=1609634570]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.2, 0)
+
+[node name="Label3D" type="Label3D" parent="." unique_id=568715938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0.08)
+modulate = Color(1, 1, 1, 0)
+text = "Tether"
+font_size = 18
+outline_size = 5

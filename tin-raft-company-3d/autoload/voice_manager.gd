@@ -4,7 +4,8 @@ signal voice_player_added(peer_id: int)
 signal voice_player_removed(peer_id: int)
 
 const VOICE_MAGIC := 0xA7
-const VOICE_HEADER_SIZE := 5
+const VOICE_HEADER_SIZE := 6
+const VOICE_FLAG_RADIO := 1
 
 const OPUS_SAMPLE_RATE := 48000
 const OPUS_CHANNELS := 1
@@ -28,6 +29,8 @@ var current_mic_level := 0.0
 var muted := false
 var is_transmitting := false
 var ptt_active := false
+## ЛКМ с рацией в активном слоте — параллельно обычному PTT (V).
+var radio_ptt_held := false
 
 var vox_timer := 0.0
 const VOX_HOLD_TIME := 0.3
@@ -160,23 +163,23 @@ func _process(_delta: float) -> void:
 	current_mic_level = vox_instant
 
 	if cached_mode == 0:
-		if not ptt_active:
+		if not ptt_active and not radio_ptt_held:
 			return
 		opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, cached_denoise, false)
 		var packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 0.95)
 		if packet.size() > 0:
-			send_voice_packet(packet)
+			send_voice_packet(packet, VOICE_FLAG_RADIO if radio_ptt_held else 0)
 	else:
 		if vox_instant >= cached_threshold:
 			is_transmitting = true
 			vox_timer = VOX_HOLD_TIME
 
-		if is_transmitting:
+		if is_transmitting or radio_ptt_held:
 			opus_encoder.process_pre_encoded_chunk(raw_chunk, OPUS_CHUNK_SIZE, cached_denoise, false)
 			var vox_packet: PackedByteArray = opus_encoder.encode_chunk(PackedByteArray(), 0.95)
 			if vox_packet.size() > 0:
-				send_voice_packet(vox_packet)
-			if vox_instant < cached_threshold:
+				send_voice_packet(vox_packet, VOICE_FLAG_RADIO if radio_ptt_held else 0)
+			if is_transmitting and vox_instant < cached_threshold:
 				vox_timer -= chunk_duration
 				if vox_timer <= 0.0:
 					is_transmitting = false
@@ -184,18 +187,23 @@ func _process(_delta: float) -> void:
 	_drain_voice_receive_queues()
 
 
-func _wrap_voice_packet(opus: PackedByteArray, speaker_id: int) -> PackedByteArray:
+func set_radio_ptt_active(v: bool) -> void:
+	radio_ptt_held = v
+
+
+func _wrap_voice_packet(opus: PackedByteArray, speaker_id: int, flags: int) -> PackedByteArray:
 	var header := PackedByteArray()
 	header.resize(VOICE_HEADER_SIZE)
 	header[0] = VOICE_MAGIC
 	header.encode_s32(1, speaker_id)
+	header[5] = flags & 0xFF
 	return header + opus
 
 
-func send_voice_packet(data: PackedByteArray) -> void:
+func send_voice_packet(data: PackedByteArray, flags: int = 0) -> void:
 	if not _is_voice_network_ready():
 		return
-	var wrapped: PackedByteArray = _wrap_voice_packet(data, multiplayer.get_unique_id())
+	var wrapped: PackedByteArray = _wrap_voice_packet(data, multiplayer.get_unique_id(), flags)
 	if multiplayer.is_server():
 		for pid in multiplayer.get_peers():
 			if pid == multiplayer.get_unique_id():
@@ -217,6 +225,7 @@ func _on_peer_packet(from_peer_id: int, packet: PackedByteArray) -> void:
 	if packet.size() < VOICE_HEADER_SIZE or packet[0] != VOICE_MAGIC:
 		return
 	var speaker_id: int = packet.decode_s32(1)
+	var flags: int = int(packet[5])
 	var opus_payload: PackedByteArray = packet.slice(VOICE_HEADER_SIZE)
 	if speaker_id == multiplayer.get_unique_id():
 		return
@@ -227,18 +236,18 @@ func _on_peer_packet(from_peer_id: int, packet: PackedByteArray) -> void:
 				continue
 			multiplayer.send_bytes(packet, pid, MultiplayerPeer.TRANSFER_MODE_UNRELIABLE, VOICE_NET_CHANNEL)
 
-	_process_voice_packet(speaker_id, opus_payload)
+	_process_voice_packet(speaker_id, opus_payload, flags)
 	_drain_voice_receive_queues()
 
 
-func _process_voice_packet(speaker_id: int, data: PackedByteArray) -> void:
+func _process_voice_packet(speaker_id: int, data: PackedByteArray, flags: int = 0) -> void:
 	if data.is_empty():
 		return
 	if not peer_voice_players.has(speaker_id):
 		_create_voice_player(speaker_id)
 
 	var q: Array = peer_voice_players[speaker_id]["queue"]
-	q.append(data)
+	q.append({"opus": data, "flags": flags})
 	while q.size() > VOICE_QUEUE_MAX_FRAMES:
 		q.pop_front()
 
@@ -250,10 +259,32 @@ func _drain_voice_receive_queues() -> void:
 		if playback == null or not is_instance_valid(playback):
 			continue
 		while q.size() > 0 and playback.available_space_frames() > 0:
-			var pkt: PackedByteArray = q.pop_front() as PackedByteArray
+			var cell: Variant = q.pop_front()
+			var pkt: PackedByteArray
+			var pkt_flags: int = 0
+			if cell is Dictionary:
+				pkt = cell.get("opus", PackedByteArray()) as PackedByteArray
+				pkt_flags = int(cell.get("flags", 0))
+			elif cell is PackedByteArray:
+				pkt = cell
+			else:
+				continue
 			if pkt.is_empty():
 				continue
 			playback.push_opus_packet(pkt, 0, 0)
+			var p3d: AudioStreamPlayer3D = peer_voice_players[speaker_id]["player"]
+			var base_db: float = linear_to_db(clampf(cached_voice_volume / 100.0, 0.0, 1.0))
+			if (pkt_flags & VOICE_FLAG_RADIO) != 0:
+				p3d.max_distance = 120000.0
+				p3d.attenuation_model = AudioStreamPlayer3D.ATTENUATION_DISABLED
+				var wobble: float = 0.72 + 0.14 * sin(float(Engine.get_physics_frames()) * 0.23 + float(speaker_id * 11))
+				p3d.pitch_scale = wobble
+				p3d.volume_db = base_db + 2.5
+			else:
+				p3d.max_distance = 22.0
+				p3d.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+				p3d.pitch_scale = 1.0
+				p3d.volume_db = base_db
 
 
 func _physics_process(_delta: float) -> void:
@@ -283,6 +314,8 @@ func _create_voice_player(peer_id: int) -> void:
 	player.bus = "Master"
 	var vol := cached_voice_volume / 100.0
 	player.volume_db = linear_to_db(clampf(vol, 0.0, 1.0))
+	player.max_distance = 22.0
+	player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	add_child(player)
 	player.play()
 
@@ -304,8 +337,13 @@ func is_local_voice_transmitting() -> bool:
 	if not _is_voice_network_ready():
 		return false
 	if cached_mode == 0:
-		return ptt_active
-	return is_transmitting
+		return ptt_active or radio_ptt_held
+	return is_transmitting or radio_ptt_held
+
+
+## Передача именно через рацию (ЛКМ + слот с рацией).
+func is_local_radio_transmitting() -> bool:
+	return not muted and _is_voice_network_ready() and radio_ptt_held
 
 
 func set_player_volume(peer_id: int, linear_volume: float) -> void:

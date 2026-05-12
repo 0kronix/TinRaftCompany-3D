@@ -29,6 +29,9 @@ func _setup_sync() -> void:
 	config.add_property(NodePath(".:position"))
 	config.add_property(NodePath(".:rotation"))
 	config.add_property(NodePath(".:eva_mode"))
+	config.add_property(NodePath(".:eva_shuttle_tether_attached"))
+	config.add_property(NodePath(".:eva_shuttle_tether_module_path"))
+	config.add_property(NodePath(".:tether_rope_visual_radius"))
 	# В EVA head остаётся 0, но синхронизируем, чтобы плавно переключать режим у кукол.
 	config.add_property(NodePath("Head:rotation"))
 	sync.replication_config = config
@@ -64,10 +67,44 @@ var _ping_row: HBoxContainer = null
 var _ping_label: Label = null
 var _ping_tx_dot: Panel = null
 var _ping_tx_style: StyleBoxFlat = null
+var _ping_radio_label: Label = null
 ## 0..1, сила ввода джетпака (только в EVA) — для камеры / тряски
 var eva_jetpack_thrust_strength: float = 0.0
 ## Нормализованное направление тяги в локале тела (как `wish`) — для тряски камеры вдоль тяги
 var eva_jetpack_thrust_dir: Vector3 = Vector3.ZERO
+
+## Кабель шаттла (EVA): точка на спине в локале капсулы (+Z — «назад», вперёд у wish — −Z).
+const EVA_SHUTTLE_TETHER_ATTACH_LOCAL := Vector3(0.0, 0.62, 0.22)
+## Слой коллайдеров «трос у тела» — добавляется в маску CharacterBody при цеплении.
+const TETHER_PLAYER_COLLISION_LAYER := 20
+## Совпадает с `Shuttle.INTERIOR_STATIC_LAYER` — EVA-игрок уже смотрит слой 11.
+const TETHER_INTERIOR_LAYER: int = 11
+## Только 11 и 20: корпус шаттла (слой 1) не резолвится с цилиндрами троса: корабль «не чувствует» кабель.
+## Упирание в обшивку остаётся за счёт Verlet (`rope_collision_mask` включает слой 1).
+const TETHER_ROPE_COLLISION_LAYERS: int = (1 << (TETHER_INTERIOR_LAYER - 1)) | (1 << (TETHER_PLAYER_COLLISION_LAYER - 1))
+const TETHER_COLLISION_SEG_POOL := 36
+var eva_shuttle_tether_attached: bool = false
+var eva_shuttle_tether_module_path: String = ""
+## Радиус троса для отрисовки у других игроков (синхронизатор копирует с владельца).
+var tether_rope_visual_radius: float = 0.038
+var _tether_anchor: Node3D = null
+var _tether_length_min: float = 5.0
+var _tether_length_max: float = 34.0
+var _tether_length_step: float = 0.75
+var _tether_payed_length: float = 5.0
+var _tether_slack_ratio: float = 0.14
+var _tether_spring: float = 90.0
+var _tether_damping: float = 7.0
+var _tether_cable_radius: float = 0.035
+var _tether_mesh_inst: MeshInstance3D = null
+var _tether_rope_array_mesh: ArrayMesh = null
+var _rope_sim: EvaShuttleRopeSim = null
+var _tether_rope_publish_phase: int = 0
+var _puppet_tether_pts: PackedVector3Array = PackedVector3Array()
+var _tether_collision_holder: Node3D = null
+var _tether_collision_seg_bodies: Array[StaticBody3D] = []
+## Исключение пары игрок↔сегмент троса (трос остаётся в мире, шаттл цепляется).
+var _tether_seg_player_exception: Array[bool] = []
 
 @export var debug_eva_head_bob_sync: bool = false
 var _debug_warned_no_cam_method: bool = false
@@ -107,6 +144,7 @@ func _setup_local_player() -> void:
 func _setup_puppet() -> void:
 	remove_from_group("player")
 	set_physics_process(false)
+	set_process(true)
 	set_process_unhandled_input(false)
 	# Show the body so other players are visible.
 	var body_mesh := get_node_or_null("BodyMesh")
@@ -159,8 +197,32 @@ func _unhandled_input(event: InputEvent) -> void:
 			head.rotate_x(y_delta2 * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
 
+
+func _holding_walkie_talkie() -> bool:
+	var hb: Node = get_node_or_null("HotbarComponent")
+	if hb is HotbarComponent:
+		var it: ItemResource = (hb as HotbarComponent).get_active_item()
+		return it != null and it.is_walkie_talkie
+	return false
+
+
+func _update_radio_ptt_voice_manager() -> void:
+	var vm := get_node_or_null("/root/VoiceManager")
+	if vm == null or not vm.has_method("set_radio_ptt_active"):
+		return
+	var allow: bool = (
+		not menu_open
+		and not inventory_open
+		and not modal_ui_block
+		and _holding_walkie_talkie()
+		and Input.is_action_pressed("radio_ptt")
+	)
+	vm.set_radio_ptt_active(allow)
+
+
 func _physics_process(delta: float) -> void:
 	if is_multiplayer_authority():
+		_update_radio_ptt_voice_manager()
 		_update_voice_tx_dot()
 	if not is_multiplayer_authority():
 		return
@@ -263,8 +325,43 @@ func _physics_process_eva(delta: float) -> void:
 		if speed > EVA_SPEED_CAP:
 			velocity = velocity * (EVA_SPEED_CAP / speed)
 
+	if eva_shuttle_tether_attached and _rope_sim != null:
+		if Input.is_action_just_pressed("tether_length_increase"):
+			_adjust_tether_payed_length(_tether_length_step)
+		if Input.is_action_just_pressed("tether_length_decrease"):
+			_adjust_tether_payed_length(-_tether_length_step)
+
+	if eva_shuttle_tether_attached:
+		if _tether_anchor == null or not is_instance_valid(_tether_anchor) or _rope_sim == null:
+			shuttle_tether_detach()
+		else:
+			var w3d: World3D = get_world_3d()
+			if w3d != null:
+				_rope_sim.step(
+					_tether_anchor.global_position,
+					_shuttle_tether_attach_point_global(),
+					delta,
+					self,
+					w3d.direct_space_state,
+					get_rid(),
+					_tether_rope_static_exclude_for_sim()
+				)
+
 	move_and_slide()
+
+	if eva_shuttle_tether_attached and _rope_sim != null and _tether_anchor != null and is_instance_valid(_tether_anchor):
+		_rope_sim.clamp_character_straight_line(_tether_anchor.global_position, self)
+
+	_update_shuttle_tether_visual()
 	_update_hover()
+
+
+func _process(_delta: float) -> void:
+	if is_multiplayer_authority():
+		return
+	if not eva_mode:
+		return
+	_update_puppet_shuttle_tether_rope_visual()
 
 
 func _update_hover() -> void:
@@ -391,6 +488,17 @@ func _setup_ping_display() -> void:
 
 	_ping_row.add_child(_ping_label)
 	_ping_row.add_child(_ping_tx_dot)
+	_ping_radio_label = Label.new()
+	_ping_radio_label.name = "RadioTxLabel"
+	_ping_radio_label.text = ""
+	_ping_radio_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_ping_radio_label.add_theme_font_size_override("font_size", 12)
+	_ping_radio_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.18))
+	_ping_radio_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	_ping_radio_label.add_theme_constant_override("shadow_offset_x", 1)
+	_ping_radio_label.add_theme_constant_override("shadow_offset_y", 1)
+	_ping_radio_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ping_row.add_child(_ping_radio_label)
 	hud_layer.add_child(_ping_row)
 	_update_ping()
 	var timer := Timer.new()
@@ -441,13 +549,30 @@ func _update_voice_tx_dot() -> void:
 		return
 	var vm := get_node_or_null("/root/VoiceManager")
 	var active: bool = false
-	if vm != null and vm.has_method("is_local_voice_transmitting"):
-		active = vm.is_local_voice_transmitting()
-	_ping_tx_style.bg_color = Color(0.35, 0.92, 0.45) if active else Color(0.22, 0.22, 0.26)
+	var radio_tx: bool = false
+	if vm != null:
+		if vm.has_method("is_local_voice_transmitting"):
+			active = vm.is_local_voice_transmitting()
+		if vm.has_method("is_local_radio_transmitting"):
+			radio_tx = vm.is_local_radio_transmitting()
+	if radio_tx:
+		_ping_tx_style.bg_color = Color(1.0, 0.48, 0.08)
+		if _ping_radio_label != null and is_instance_valid(_ping_radio_label):
+			_ping_radio_label.text = "РАЦИЯ TX"
+	elif active:
+		_ping_tx_style.bg_color = Color(0.35, 0.92, 0.45)
+		if _ping_radio_label != null and is_instance_valid(_ping_radio_label):
+			_ping_radio_label.text = ""
+	else:
+		_ping_tx_style.bg_color = Color(0.22, 0.22, 0.26)
+		if _ping_radio_label != null and is_instance_valid(_ping_radio_label):
+			_ping_radio_label.text = ""
 
 
 ## Сброс скорости и «верха» после телепорта шлюзом (NetworkManager).
 func align_after_airlock_teleport(to_eva: bool) -> void:
+	if not to_eva:
+		shuttle_tether_detach()
 	velocity  = Vector3.ZERO
 	rotation  = Vector3.ZERO
 	if head:
@@ -456,3 +581,369 @@ func align_after_airlock_teleport(to_eva: bool) -> void:
 		up_direction = global_transform.basis.y
 	else:
 		up_direction = Vector3.UP
+
+
+func toggle_shuttle_tether_at_module(module: Node) -> void:
+	if module == null or not is_instance_valid(module):
+		return
+	var path_s := str(module.get_path())
+	if eva_shuttle_tether_attached and eva_shuttle_tether_module_path == path_s:
+		shuttle_tether_detach()
+	else:
+		shuttle_tether_attach(module)
+
+
+func shuttle_tether_detach() -> void:
+	var was_attached: bool = eva_shuttle_tether_attached
+	eva_shuttle_tether_attached = false
+	eva_shuttle_tether_module_path = ""
+	_tether_anchor = null
+	_rope_sim = null
+	_tether_rope_publish_phase = 0
+	_puppet_tether_pts.clear()
+	if _tether_mesh_inst != null and is_instance_valid(_tether_mesh_inst):
+		_tether_mesh_inst.visible = false
+	if is_multiplayer_authority():
+		set_collision_mask_value(TETHER_PLAYER_COLLISION_LAYER, false)
+		_free_tether_rope_collision_holder()
+	if was_attached and is_multiplayer_authority() and NetworkManager.is_session_active():
+		NetworkManager.publish_shuttle_tether_rope_polyline(get_multiplayer_authority(), PackedVector3Array())
+
+
+func shuttle_tether_attach(module: Node) -> void:
+	if not eva_mode:
+		return
+	shuttle_tether_detach()
+	var anchor := module.get_node_or_null("CableAnchor") as Node3D
+	if anchor == null:
+		return
+	if module.has_method("get_tether_parameters"):
+		var d: Dictionary = module.get_tether_parameters()
+		_tether_length_min = float(d.get("length_min", 5.0))
+		_tether_length_max = float(d.get("length_max", d.get("max_length", 34.0)))
+		if _tether_length_max < _tether_length_min:
+			var t: float = _tether_length_min
+			_tether_length_min = _tether_length_max
+			_tether_length_max = t
+		_tether_length_step = maxf(0.05, float(d.get("length_step", 0.75)))
+		_tether_payed_length = clampf(_tether_length_min, _tether_length_min, _tether_length_max)
+		_tether_slack_ratio = clampf(float(d.get("slack_ratio", 0.14)), 0.0, 0.45)
+		_tether_spring = float(d.get("spring", 90.0))
+		_tether_damping = float(d.get("damping", 7.0))
+		_tether_cable_radius = float(d.get("cable_radius", 0.035))
+		tether_rope_visual_radius = _tether_cable_radius
+		var rseg: int = int(d.get("rope_segments", 18))
+		var rcol: float = float(d.get("rope_collision_radius", 0.065))
+		var rmask: int = int(d.get("rope_collision_mask", 1025))
+		_rope_sim = EvaShuttleRopeSim.new()
+		_rope_sim.configure(
+			rseg,
+			_tether_length_min,
+			_tether_length_max,
+			_tether_payed_length,
+			_tether_slack_ratio,
+			_tether_spring,
+			_tether_damping,
+			rcol,
+			rmask,
+			EVA_SHUTTLE_TETHER_ATTACH_LOCAL
+		)
+	else:
+		tether_rope_visual_radius = 0.035
+		_tether_cable_radius = 0.035
+		_tether_length_min = 5.0
+		_tether_length_max = 34.0
+		_tether_length_step = 0.75
+		_tether_payed_length = _tether_length_min
+		_tether_slack_ratio = 0.14
+		_tether_spring = 90.0
+		_tether_damping = 7.0
+		_rope_sim = EvaShuttleRopeSim.new()
+		_rope_sim.configure(
+			18,
+			_tether_length_min,
+			_tether_length_max,
+			_tether_payed_length,
+			_tether_slack_ratio,
+			_tether_spring,
+			_tether_damping,
+			0.065,
+			1025,
+			EVA_SHUTTLE_TETHER_ATTACH_LOCAL
+		)
+	_rope_sim.reset_straight(anchor.global_position, _shuttle_tether_attach_point_global())
+	print(
+		"[Tether] подключение, выпущенная длина: ",
+		snappedf(_tether_payed_length, 0.01),
+		" м (диапазон ",
+		snappedf(_tether_length_min, 0.1),
+		" … ",
+		snappedf(_tether_length_max, 0.1),
+		"); X — длиннее, Z — короче"
+	)
+	_tether_anchor = anchor
+	eva_shuttle_tether_attached = true
+	eva_shuttle_tether_module_path = str(module.get_path())
+	_ensure_shuttle_tether_visual()
+	if is_multiplayer_authority():
+		set_collision_mask_value(TETHER_PLAYER_COLLISION_LAYER, true)
+		_ensure_tether_rope_collision_holder()
+
+
+func _adjust_tether_payed_length(delta_len: float) -> void:
+	if _rope_sim == null:
+		return
+	var target: float = clampf(_tether_payed_length + delta_len, _tether_length_min, _tether_length_max)
+	if absf(target - _tether_payed_length) < 1e-5:
+		return
+	if not _rope_sim.set_payed_length(target):
+		return
+	_tether_payed_length = _rope_sim.get_payed_length()
+	print("[Tether] выпущенная длина: ", snappedf(_tether_payed_length, 0.01), " м")
+
+
+func apply_shuttle_tether_rope_visual(points_world: PackedVector3Array) -> void:
+	if is_multiplayer_authority():
+		return
+	_puppet_tether_pts = points_world.duplicate()
+
+
+func _ensure_shuttle_tether_visual() -> void:
+	if _tether_mesh_inst != null and is_instance_valid(_tether_mesh_inst):
+		_tether_mesh_inst.visible = true
+		return
+	var mi := MeshInstance3D.new()
+	mi.name = "ShuttleTetherCable"
+	_tether_rope_array_mesh = ArrayMesh.new()
+	mi.mesh = _tether_rope_array_mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.42, 0.44, 0.48)
+	mat.metallic = 0.35
+	mat.roughness = 0.55
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	_tether_mesh_inst = mi
+
+
+func _shuttle_tether_attach_point_global() -> Vector3:
+	return global_position + global_transform.basis * EVA_SHUTTLE_TETHER_ATTACH_LOCAL
+
+
+func _shuttle_tether_polyline_world_to_mesh_local(poly_world: PackedVector3Array) -> PackedVector3Array:
+	var out: PackedVector3Array = PackedVector3Array()
+	var n: int = poly_world.size()
+	out.resize(n)
+	var inv: Transform3D = global_transform.affine_inverse()
+	for i: int in range(n):
+		out[i] = inv * poly_world[i]
+	return out
+
+
+func _update_shuttle_tether_visual() -> void:
+	if not is_multiplayer_authority():
+		return
+	if _tether_mesh_inst == null or not is_instance_valid(_tether_mesh_inst):
+		return
+	if not eva_shuttle_tether_attached or _rope_sim == null or _tether_anchor == null or not is_instance_valid(_tether_anchor):
+		_tether_mesh_inst.visible = false
+		_disable_all_tether_rope_collision_segments()
+		return
+	var poly: PackedVector3Array = _rope_sim.get_polyline_with_attach(_shuttle_tether_attach_point_global())
+	if poly.size() < 2:
+		_tether_mesh_inst.visible = false
+		_disable_all_tether_rope_collision_segments()
+		return
+	if _tether_rope_array_mesh == null:
+		_tether_rope_array_mesh = _tether_mesh_inst.mesh as ArrayMesh
+		if _tether_rope_array_mesh == null:
+			_tether_rope_array_mesh = ArrayMesh.new()
+			_tether_mesh_inst.mesh = _tether_rope_array_mesh
+	var poly_local: PackedVector3Array = _shuttle_tether_polyline_world_to_mesh_local(poly)
+	EvaShuttleRopeMesh.rebuild_tube_mesh(_tether_rope_array_mesh, poly_local, _tether_cable_radius, 6)
+	_tether_mesh_inst.visible = true
+	_update_tether_rope_collision_segments(poly)
+
+	if NetworkManager.is_session_active():
+		_tether_rope_publish_phase += 1
+		if _tether_rope_publish_phase % 2 == 0:
+			NetworkManager.publish_shuttle_tether_rope_polyline(get_multiplayer_authority(), poly)
+
+
+func _update_puppet_shuttle_tether_rope_visual() -> void:
+	if not eva_shuttle_tether_attached or _puppet_tether_pts.size() < 2:
+		if _tether_mesh_inst != null and is_instance_valid(_tether_mesh_inst):
+			_tether_mesh_inst.visible = false
+		return
+	_ensure_shuttle_tether_visual()
+	if _tether_rope_array_mesh == null:
+		_tether_rope_array_mesh = _tether_mesh_inst.mesh as ArrayMesh
+		if _tether_rope_array_mesh == null:
+			_tether_rope_array_mesh = ArrayMesh.new()
+			_tether_mesh_inst.mesh = _tether_rope_array_mesh
+	var poly_local: PackedVector3Array = _shuttle_tether_polyline_world_to_mesh_local(_puppet_tether_pts)
+	EvaShuttleRopeMesh.rebuild_tube_mesh(_tether_rope_array_mesh, poly_local, tether_rope_visual_radius, 6)
+	_tether_mesh_inst.visible = true
+
+
+## Расстояние отрезка троса до оси капсулы мало — не выключаем слои (шаттл/мир),
+## а только `add_collision_exception_with`, иначе трос «пропадает» для всех.
+func _tether_rope_segment_too_close_to_player_capsule(
+	ra: Vector3,
+	rb: Vector3,
+	rope_r: float,
+	cap_ax_a: Vector3,
+	cap_ax_b: Vector3,
+	cap_rad: float
+) -> bool:
+	var clearance: float = cap_rad + rope_r + 0.1
+	var axis: Vector3 = cap_ax_b - cap_ax_a
+	var Lax: float = axis.length_squared()
+	if Lax < 1e-10:
+		return ra.distance_squared_to(cap_ax_a) < clearance * clearance
+	var invL: float = 1.0 / Lax
+	for si: int in range(9):
+		var p: Vector3 = ra.lerp(rb, float(si) / 8.0)
+		var u: float = clampf((p - cap_ax_a).dot(axis) * invL, 0.0, 1.0)
+		var q: Vector3 = cap_ax_a + axis * u
+		if p.distance_to(q) < clearance:
+			return true
+	return false
+
+
+func _tether_seg_basis_y(y_unit: Vector3) -> Basis:
+	var y: Vector3 = y_unit
+	var refx: Vector3 = Vector3.RIGHT
+	if absf(y.dot(refx)) > 0.9:
+		refx = Vector3.FORWARD
+	var x: Vector3 = refx.cross(y).normalized()
+	var z: Vector3 = y.cross(x)
+	return Basis(x, y, z)
+
+
+func _ensure_tether_rope_collision_holder() -> void:
+	if _tether_collision_holder != null and is_instance_valid(_tether_collision_holder):
+		return
+	var par: Node = get_parent()
+	if par == null:
+		return
+	var h := Node3D.new()
+	h.name = "ShuttleTetherColliders_%d" % get_multiplayer_authority()
+	par.add_child(h)
+	_tether_collision_holder = h
+	_tether_collision_seg_bodies.clear()
+	for i: int in range(TETHER_COLLISION_SEG_POOL):
+		var sb := StaticBody3D.new()
+		sb.name = "TetherSeg_%d" % i
+		sb.collision_layer = 0
+		sb.collision_mask = 0
+		var cs := CollisionShape3D.new()
+		var cyl := CylinderShape3D.new()
+		cyl.radius = maxf(0.045, _tether_cable_radius * 2.0)
+		cyl.height = 0.12
+		cs.shape = cyl
+		sb.add_child(cs)
+		h.add_child(sb)
+		_tether_collision_seg_bodies.append(sb)
+	_tether_seg_player_exception.clear()
+	_tether_seg_player_exception.resize(TETHER_COLLISION_SEG_POOL)
+	for j: int in range(TETHER_COLLISION_SEG_POOL):
+		_tether_seg_player_exception[j] = false
+
+
+func _free_tether_rope_collision_holder() -> void:
+	_disable_all_tether_rope_collision_segments()
+	if _tether_collision_holder != null and is_instance_valid(_tether_collision_holder):
+		_tether_collision_holder.queue_free()
+	_tether_collision_holder = null
+	_tether_collision_seg_bodies.clear()
+	_tether_seg_player_exception.clear()
+
+
+func _tether_rope_static_exclude_for_sim() -> Array:
+	if _tether_collision_seg_bodies.is_empty():
+		return []
+	var out: Array = []
+	for sb: StaticBody3D in _tether_collision_seg_bodies:
+		if sb != null and is_instance_valid(sb):
+			var rid: RID = sb.get_rid()
+			if rid.is_valid():
+				out.append(rid)
+	return out
+
+
+func _tether_rope_collision_set_player_exception_for_seg(i: int, sb: StaticBody3D, want_exc: bool) -> void:
+	if i < 0 or i >= _tether_seg_player_exception.size():
+		return
+	var had: bool = _tether_seg_player_exception[i]
+	if want_exc == had:
+		return
+	if want_exc:
+		add_collision_exception_with(sb)
+	else:
+		remove_collision_exception_with(sb)
+	_tether_seg_player_exception[i] = want_exc
+
+
+func _disable_all_tether_rope_collision_segments() -> void:
+	for i: int in range(_tether_collision_seg_bodies.size()):
+		var sb: StaticBody3D = _tether_collision_seg_bodies[i]
+		if sb != null and is_instance_valid(sb):
+			_tether_rope_collision_set_player_exception_for_seg(i, sb, false)
+			sb.collision_layer = 0
+
+
+func _update_tether_rope_collision_segments(poly_world: PackedVector3Array) -> void:
+	if _tether_collision_holder == null or not is_instance_valid(_tether_collision_holder):
+		return
+	var nseg: int = poly_world.size() - 1
+	var last_edge_i: int = nseg - 1
+	var pool: int = _tether_collision_seg_bodies.size()
+	var r: float = maxf(0.045, _tether_cable_radius * 2.0)
+	var cap_ax_a: Vector3
+	var cap_ax_b: Vector3
+	var cap_rad: float = 0.4
+	var cs_body: CollisionShape3D = get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if cs_body != null and cs_body.shape is CapsuleShape3D:
+		var capsh: CapsuleShape3D = cs_body.shape as CapsuleShape3D
+		cap_rad = capsh.radius
+		var half_ax: float = capsh.height * 0.5
+		var txf: Transform3D = cs_body.global_transform
+		cap_ax_a = txf * Vector3(0, -half_ax, 0)
+		cap_ax_b = txf * Vector3(0, half_ax, 0)
+	else:
+		var upv: Vector3 = global_transform.basis.y.normalized()
+		cap_ax_a = global_position + upv * -0.9
+		cap_ax_b = global_position + upv * 0.9
+	for i: int in range(pool):
+		var sb: StaticBody3D = _tether_collision_seg_bodies[i]
+		if sb == null or not is_instance_valid(sb):
+			continue
+		if i >= nseg or nseg < 1:
+			_tether_rope_collision_set_player_exception_for_seg(i, sb, false)
+			sb.collision_layer = 0
+			continue
+		var a: Vector3 = poly_world[i]
+		var b: Vector3 = poly_world[i + 1]
+		var seg: Vector3 = b - a
+		var L: float = seg.length()
+		if L < 0.025:
+			_tether_rope_collision_set_player_exception_for_seg(i, sb, false)
+			sb.collision_layer = 0
+			continue
+		var yax: Vector3 = seg / L
+		var mid: Vector3 = (a + b) * 0.5
+		sb.global_transform = Transform3D(_tether_seg_basis_y(yax), mid)
+		var cs: Node = sb.get_child(0)
+		if cs is CollisionShape3D:
+			var sh: Shape3D = (cs as CollisionShape3D).shape
+			if sh is CylinderShape3D:
+				var cyl: CylinderShape3D = sh as CylinderShape3D
+				cyl.height = L
+				cyl.radius = r
+		sb.collision_layer = TETHER_ROPE_COLLISION_LAYERS
+		var want_player_exc: bool = (i == last_edge_i) or _tether_rope_segment_too_close_to_player_capsule(
+			a, b, r, cap_ax_a, cap_ax_b, cap_rad
+		)
+		_tether_rope_collision_set_player_exception_for_seg(i, sb, want_player_exc)

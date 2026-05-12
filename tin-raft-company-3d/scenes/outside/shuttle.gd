@@ -3,6 +3,8 @@ extends NetworkReplicatedRigidBody
 ## Слой для дочерних StaticBody (шлюз и т.п.): они не должны сталкиваться с коллайдером корпуса,
 ## иначе Jolt каждый кадр резолвит «сам с собой» и скорость рвётся после отпускания тяги.
 const INTERIOR_STATIC_LAYER: int = 11
+## Цилиндры EVA-троса (`player.gd` TETHER_PLAYER_COLLISION_LAYER) — корпус не резолвится с ними; изгиб у обшивки даёт Verlet.
+const EVA_TETHER_ROPE_STATIC_LAYER: int = 20
 
 # ── Настройки ──────────────────────────────────────────────
 @export var thruster_force: float = 0.1
@@ -76,6 +78,7 @@ func _ready() -> void:
 
 func _exclude_interior_static_vs_hull() -> void:
 	set_collision_mask_value(INTERIOR_STATIC_LAYER, false)
+	set_collision_mask_value(EVA_TETHER_ROPE_STATIC_LAYER, false)
 	for c in get_children():
 		if c is StaticBody3D:
 			var sb: StaticBody3D = c as StaticBody3D
