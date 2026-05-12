@@ -118,11 +118,6 @@ func _resize() -> void:
 	var sidebar := $WindowPanel/VBoxContainer/Body/SideBar
 	sidebar.custom_minimum_size.x = 220
 
-func _exit_to_lobby() -> void:
-	if NetworkManager.is_session_active():
-		NetworkManager.leave()
-	get_tree().change_scene_to_file("res://scenes/network/lobby.tscn")
-
 func _refresh_texts() -> void:
 	title_label.text = _t("Настройки", "Settings")
 	nav_sound.text = _t("Звук", "Sound")
