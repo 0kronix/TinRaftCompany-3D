@@ -6,6 +6,9 @@ signal settings_applied
 const SAVE_PATH := "user://settings.cfg"
 const SUPPORTED_LANGUAGES: PackedStringArray = ["ru", "en"]
 
+var _data_snapshot := {}
+var _is_editing := false
+
 var data := {
 	# Звук
 	"vol_master":    80.0,
@@ -17,6 +20,13 @@ var data := {
 	"halluc_sound":  true,
 	"output_device": 0,
 	"mic_device":    0,
+	
+	# Голосовой чат
+	"voice_mode":      0,     # 0 = PTT, 1 = VOX
+	"voice_volume":    80.0,  # общая громкость голоса (0–100 %)
+	"mic_threshold":   20.0,  # порог активации для VOX
+	"voice_ptt_key":   KEY_V, # клавиша Push-to-Talk
+	"voice_mute_key":  KEY_M, # клавиша полного отключения микрофона
 
 	# Экран
 	"resolution":    0,
@@ -55,8 +65,6 @@ var data := {
 	"net_mode":      0,
 	"port":          7777,
 	"max_players":   4,
-	"voice_mode":    0,
-	"mic_threshold": 20.0,
 	"noise_suppress":true,
 	"lobby_visible": 0,
 	"lobby_name":    "МОДУЛЬ #4471",
@@ -91,6 +99,8 @@ func load_settings() -> void:
 
 func reset_to_defaults() -> void:
 	data = _defaults.duplicate(true)
+	commit_edit()
+	save()   
 
 func apply_all() -> void:
 	_apply_audio()
@@ -203,3 +213,27 @@ func _apply_bus_volume_if_exists(bus_name: String, linear_value: float) -> void:
 	if bus_index == -1:
 		return
 	AudioServer.set_bus_volume_db(bus_index, linear_to_db(clampf(linear_value, 0.0001, 1.0)))
+
+func get_voice_volume() -> float:
+	return float(data.get("voice_volume", 80.0))
+
+func get_voice_mode() -> int:
+	return int(data.get("voice_mode", 0))
+	
+func begin_edit() -> void:
+	_data_snapshot = data.duplicate(true)
+	_is_editing = true
+
+func cancel_edit() -> void:
+	if _is_editing:
+		data = _data_snapshot.duplicate(true)
+		_is_editing = false
+
+func commit_edit() -> void:
+	if _is_editing:
+		_data_snapshot = data.duplicate(true)   # обновляем снимок
+		_is_editing = false
+		
+func apply_and_save() -> void:
+	save()
+	commit_edit()

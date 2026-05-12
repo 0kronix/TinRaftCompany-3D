@@ -81,12 +81,12 @@ offset_bottom = 900.0
 mouse_filter = 2
 color = Color(1, 1, 1, 0)
 
-[node name="HotbarLayer" type="CanvasLayer" parent="." unique_id=1723359390]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=1723359390]
 layer = 10
 
-[node name="HotbarUI" parent="HotbarLayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
+[node name="HotbarUI" parent="UILayer" unique_id=938381524 instance=ExtResource("4_2ag4j")]
 
-[node name="CapsuleStatusHUD" parent="HotbarLayer" unique_id=1366327688 instance=ExtResource("8_capsule_hud")]
+[node name="CapsuleStatusHUD" parent="UILayer" unique_id=1366327688 instance=ExtResource("8_capsule_hud")]
 
 [node name="InventoryComponent" type="Node" parent="." unique_id=1694525340]
 script = ExtResource("5_2ag4j")

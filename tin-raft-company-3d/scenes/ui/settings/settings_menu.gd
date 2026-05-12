@@ -56,13 +56,21 @@ func _switch_page(index: int) -> void:
 		all_nav[i].alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 func _apply_settings() -> void:
-	SettingsManager.save()
+	SettingsManager.apply_and_save()
 	_refresh_all_pages()
 
 func _reset_settings() -> void:
 	SettingsManager.reset_to_defaults()
-	SettingsManager.save()
 	_refresh_all_pages()
+
+func _exit_to_lobby() -> void:
+	if SettingsManager._is_editing:
+		SettingsManager.cancel_edit()
+		_refresh_all_pages()
+	var nm := get_node_or_null("/root/NetworkManager")
+	if nm and nm.is_session_active():
+		nm.leave()
+	get_tree().change_scene_to_file("res://scenes/network/lobby.tscn")
 
 func _refresh_all_pages() -> void:
 	for page in all_pages:
@@ -82,8 +90,15 @@ func show_menu() -> void:
 	tween.tween_property(self, "modulate:a", 1.0, 0.15)
 	tween.tween_property($WindowPanel, "scale", Vector2.ONE, 0.15)\
 		 .set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	SettingsManager.begin_edit()
+	_refresh_all_pages()
 
 func hide_menu() -> void:
+	if SettingsManager._is_editing:
+		SettingsManager.cancel_edit()
+		_refresh_all_pages()
+	
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(self, "modulate:a", 0.0, 0.1)
 	tween.tween_property($WindowPanel, "scale", Vector2(0.96, 0.96), 0.1)

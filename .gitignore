@@ -3,6 +3,7 @@
 .import/
 
 # Временные файлы
+*.import
 *.tmp
 *.log
 

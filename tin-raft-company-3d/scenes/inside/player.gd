@@ -156,7 +156,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			head.rotate_x(y_delta2 * mouse_sensitivity)
 			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
 
-
 func _physics_process(delta: float) -> void:
 	if not is_multiplayer_authority():
 		return
