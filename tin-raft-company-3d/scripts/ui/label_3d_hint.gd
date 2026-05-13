@@ -1,6 +1,6 @@
 extends RefCounted
 class_name Label3DHint
-## Подсветка подсказки на Label3D (Tween) — единые тайминги, меньше копипаста.
+## Скрытие текста в мире (подсказка на экране — `InteractionHintPresenter` + `Label3D` как источник строки).
 
 
 static func prepare_hidden(label: Label3D) -> void:

@@ -5,6 +5,8 @@ class_name GameScenePaths
 const INSIDE := "Inside"
 const PLAYER_CONTAINER := "EVA/ShipInterior/PlayerContainer"
 const EVA_SHUTTLE := INSIDE + "/EVA/Shuttle"
+## Маркер на сцене шаттла: откуда/куда направлен выброс из шлюзового ящика (вращайте узел в редакторе).
+const EVA_SHUTTLE_CRATE_EJECT := EVA_SHUTTLE + "/CrateEjectPort"
 const EVA_SHUTTLE_EVASPAWN := EVA_SHUTTLE + "/EvaSpawn"
 ## Узел штурвала EVA (команды `open_interactable_ui`; стабильный путь без get_path()).
 

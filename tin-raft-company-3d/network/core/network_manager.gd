@@ -12,6 +12,8 @@ signal session_ended
 signal player_joined(peer_id: int)
 signal player_left(peer_id: int)
 signal connection_failed
+signal system_chat_join(peer_id: int)
+signal system_chat_leave(peer_id: int)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 const MAX_PEERS := 4
@@ -227,10 +229,14 @@ func _cleanup_session() -> void:
 
 func _on_peer_connected(peer_id: int) -> void:
 	player_joined.emit(peer_id)
+	if multiplayer.is_server() and peer_id > 0:
+		_rpc_system_chat_join.rpc(peer_id)
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	player_left.emit(peer_id)
+	if multiplayer.is_server() and peer_id > 0:
+		_rpc_system_chat_leave.rpc(peer_id)
 
 
 func _on_connected_to_server() -> void:
@@ -246,6 +252,16 @@ func _on_server_disconnected() -> void:
 	_cleanup_session()
 	session_ended.emit()
 	get_tree().change_scene_to_file(LOBBY_SCENE)
+
+
+@rpc("authority", "reliable", "call_local")
+func _rpc_system_chat_join(peer_id: int) -> void:
+	system_chat_join.emit(peer_id)
+
+
+@rpc("authority", "reliable", "call_local")
+func _rpc_system_chat_leave(peer_id: int) -> void:
+	system_chat_leave.emit(peer_id)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

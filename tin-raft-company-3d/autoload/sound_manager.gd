@@ -87,10 +87,15 @@ func _prepare_loop_stream(s: AudioStream) -> void:
 
 
 func _ensure_loop_player(slot: StringName, sound_id: String, parent: Node3D, bus_name: String) -> AudioStreamPlayer3D:
+	if parent == null or not is_instance_valid(parent) or not parent.is_inside_tree():
+		return null
 	if _loops.has(slot):
-		var existing: AudioStreamPlayer3D = _loops[slot] as AudioStreamPlayer3D
-		if is_instance_valid(existing) and existing.get_parent() == parent:
-			return existing
+		var held: Variant = _loops[slot]
+		if typeof(held) == TYPE_OBJECT and is_instance_valid(held) and held is AudioStreamPlayer3D:
+			var existing: AudioStreamPlayer3D = held
+			var par: Node = existing.get_parent()
+			if is_instance_valid(par) and par == parent:
+				return existing
 		_loops.erase(slot)
 	var stream := _get_stream(sound_id)
 	if stream == null:

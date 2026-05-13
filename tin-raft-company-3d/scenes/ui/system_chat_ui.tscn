@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://4c0lvcxc3fng"]
+
+[ext_resource type="Script" uid="uid://d2lasystemch" path="res://scenes/ui/system_chat_ui.gd" id="1_script"]
+
+[node name="SystemChat" type="Control" unique_id=1320380016]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="ChatPanel" type="PanelContainer" parent="." unique_id=444462006]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 12.0
+offset_bottom = -12.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="RichTextLabel" type="RichTextLabel" parent="ChatPanel" unique_id=1917879294]
+custom_minimum_size = Vector2(400, 140)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 14
+bbcode_enabled = true
+scroll_following = true
+autowrap_mode = 2

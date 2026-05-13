@@ -216,8 +216,8 @@ func _spawn_debris() -> void:
 
 
 func show_hint() -> void:
-	Label3DHint.tween_show(self, label)
+	pass
 
 
 func hide_hint() -> void:
-	Label3DHint.tween_hide(self, label)
+	pass

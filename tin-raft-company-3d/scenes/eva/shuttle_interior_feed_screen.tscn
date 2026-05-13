@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://l3dwqg4ykhac"]
+
+[ext_resource type="Script" path="res://scenes/eva/shuttle_interior_feed_screen.gd" id="1_script"]
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 0.45
+outer_radius = 0.54
+rings = 40
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ring"]
+albedo_color = Color(0.22, 0.24, 0.28, 1)
+metallic = 0.88
+roughness = 0.38
+
+[node name="ShuttleInteriorFeedScreen" type="Node3D" unique_id=1517019375]
+script = ExtResource("1_script")
+
+[node name="WindowGlass" type="MeshInstance3D" parent="." unique_id=1501408120]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -1.18, 0.42, 0.06)
+
+[node name="PortholeFrame" type="MeshInstance3D" parent="WindowGlass" unique_id=2145669328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.014)
+mesh = SubResource("TorusMesh_ring")
+surface_material_override/0 = SubResource("StandardMaterial3D_ring")
+
+[node name="Monitor" type="MeshInstance3D" parent="." unique_id=418634261]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 1.12, 0.42, 0.06)

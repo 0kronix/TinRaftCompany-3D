@@ -41,11 +41,11 @@ func _hint_text() -> String:
 
 
 func show_hint() -> void:
-	Label3DHint.tween_show(self, _label, 0.12)
+	pass
 
 
 func hide_hint() -> void:
-	Label3DHint.tween_hide(self, _label)
+	pass
 
 
 func interact(caller: Node3D) -> void:

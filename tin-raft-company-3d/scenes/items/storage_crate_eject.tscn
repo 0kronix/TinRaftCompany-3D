@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://38pu2cufhfee"]
+
+[ext_resource type="Script" path="res://scenes/items/storage_crate.gd" id="1_crate"]
+[ext_resource type="PackedScene" uid="uid://bu7xnb6oyh6js" path="res://scenes/items/storage_crate_ui.tscn" id="2_ui"]
+[ext_resource type="Script" uid="uid://xyyoiaowmjqt" path="res://scenes/ui/hotbar/InventoryComponent.gd" id="3_inv"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+size = Vector3(0.95, 0.65, 0.95)
+
+[sub_resource type="StandardMaterial3D" id="Mat_eject"]
+albedo_color = Color(0.35, 0.38, 0.45, 1)
+roughness = 0.55
+metallic = 0.25
+
+[sub_resource type="BoxShape3D" id="Shape_crate"]
+size = Vector3(0.95, 0.65, 0.95)
+
+[node name="StorageEjectCrate" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_crate")
+ui_scene = ExtResource("2_ui")
+is_ejector = true
+eject_at_shuttle_hatch = true
+eject_marker_path = NodePath("EjectMarker")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Mat_eject")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_crate")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0)
+billboard = 1
+text = "E — шлюзовой ящик"
+font_size = 20
+
+[node name="EjectMarker" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 1.15)
+
+[node name="InventoryComponent" type="Node" parent="."]
+script = ExtResource("3_inv")
+max_slots = 10
+max_mass = 80.0

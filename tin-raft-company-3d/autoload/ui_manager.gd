@@ -23,9 +23,12 @@ func _show_ui_impl(ui_scene: PackedScene, interactable_target_path: String, with
 	for c: Node in ui_layer.get_children().duplicate():
 		c.free()
 	var ui: Node = ui_scene.instantiate()
-	if not interactable_target_path.is_empty() and ui.has_method("set_helm_target"):
-		ui.set_helm_target(interactable_target_path)
 	ui_layer.add_child(ui)
+	if not interactable_target_path.is_empty():
+		if ui.has_method("set_interactable_target"):
+			ui.set_interactable_target(interactable_target_path)
+		elif ui.has_method("set_helm_target"):
+			ui.set_helm_target(interactable_target_path)
 	if not with_modal_block:
 		return
 	LocalPlayerFinder.set_modal_ui_block_for_authority_player(get_tree(), true)

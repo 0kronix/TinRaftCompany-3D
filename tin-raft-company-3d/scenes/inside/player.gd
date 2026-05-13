@@ -174,6 +174,9 @@ func _setup_puppet() -> void:
 
 func set_modal_ui_block(v: bool) -> void:
 	modal_ui_block = v
+	if v:
+		InteractionHintPresenter.hide_hint_text()
+		current_hovered = null
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -242,6 +245,8 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		eva_jetpack_thrust_strength = 0.0
 		eva_jetpack_thrust_dir = Vector3.ZERO
+		InteractionHintPresenter.hide_hint_text()
+		current_hovered = null
 		return
 	if not eva_mode:
 		eva_jetpack_thrust_strength = 0.0
@@ -285,6 +290,8 @@ func _sync_eva_camera_physics_hints() -> void:
 
 func _physics_process_interior(delta: float) -> void:
 	if menu_open:
+		InteractionHintPresenter.hide_hint_text()
+		current_hovered = null
 		return
 
 	var input_dir := Vector2(
@@ -331,6 +338,8 @@ func _physics_process_eva(delta: float) -> void:
 	if menu_open:
 		eva_jetpack_thrust_strength = 0.0
 		eva_jetpack_thrust_dir = Vector3.ZERO
+		InteractionHintPresenter.hide_hint_text()
+		current_hovered = null
 		return
 	up_direction = global_transform.basis.y
 
@@ -398,18 +407,19 @@ func _update_hover() -> void:
 		current_hovered = null
 
 	if ray.is_colliding():
-		var obj = ray.get_collider()
-		if obj != current_hovered:
-			if current_hovered and current_hovered.has_method("hide_hint"):
-				current_hovered.hide_hint()
-			if obj.has_method("show_hint"):
-				obj.show_hint()
-				current_hovered = obj
-			else:
-				current_hovered = null
+		var collider: Node = ray.get_collider() as Node
+		var prov: Node = InteractionHintPresenter.find_hint_provider(collider)
+		if prov != current_hovered:
+			InteractionHintPresenter.hide_hint_text()
+			current_hovered = prov
+			if prov:
+				var txt: String = InteractionHintPresenter.resolve_hint_text(prov)
+				if not txt.is_empty():
+					InteractionHintPresenter.show_hint_text(txt)
+				else:
+					current_hovered = null
 	else:
-		if current_hovered and current_hovered.has_method("hide_hint"):
-			current_hovered.hide_hint()
+		InteractionHintPresenter.hide_hint_text()
 		current_hovered = null
 
 
@@ -448,6 +458,8 @@ func toggle_inventory() -> void:
 
 
 func open_inventory() -> void:
+	InteractionHintPresenter.hide_hint_text()
+	current_hovered = null
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 
@@ -465,6 +477,8 @@ func toggle_menu() -> void:
 
 
 func open_menu() -> void:
+	InteractionHintPresenter.hide_hint_text()
+	current_hovered = null
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	var ui := get_node_or_null("MenuLayer/SettingsMenu")
 	if ui:

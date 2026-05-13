@@ -2,8 +2,13 @@
 
 [ext_resource type="PackedScene" uid="uid://cpmkdj8jia3fb" path="res://models/lego_space/lego_classic_space_space_shuttle.glb" id="1_05w72"]
 [ext_resource type="Script" uid="uid://bq4407qir387m" path="res://scenes/outside/shuttle.gd" id="1_m07ae"]
+[ext_resource type="PackedScene" uid="uid://b8lpsmnf81t8e" path="res://scenes/outside/shuttle_exterior_feed_camera.tscn" id="2_camscr"]
+[ext_resource type="Script" uid="uid://dom8gf3e6482q" path="res://scenes/outside/shuttle_hull_window_glass.gd" id="3_hullg"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0u33h"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_hull_glass"]
+size = Vector2(1.75, 1.75)
 
 [node name="Shuttle" type="RigidBody3D" unique_id=639041244]
 mass = 10.0
@@ -16,9 +21,6 @@ script = ExtResource("1_m07ae")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=460113761]
 transform = Transform3D(1.96, 0, 0, 0, 0.865, 0, 0, 0, 1.925, 0, 0.38980073, 0)
 shape = SubResource("BoxShape3D_0u33h")
-
-[node name="Camera3D" type="Camera3D" parent="." unique_id=2054614256]
-transform = Transform3D(1, 0, 0, 0, 0.9396927, 0.34202015, 0, -0.34202015, 0.9396927, 0, 1.350567, 2.166705)
 
 [node name="Sketchfab_Scene" parent="." unique_id=284207883 instance=ExtResource("1_05w72")]
 transform = Transform3D(-0.02, 0, -1.7484555e-09, 0, 0.02, 0, 1.7484555e-09, 0, -0.02, 0, 0, 0)
@@ -63,3 +65,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.8, 0)
 
 [node name="Main_Engine" type="Marker3D" parent="Thrusters" unique_id=469721578]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, 1)
+
+[node name="ShuttleExteriorMonitorFeed" parent="." unique_id=337274445 instance=ExtResource("2_camscr")]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.95266145, 0.30403304, 0, -0.30403307, 0.9526614, 0, 1.327, 1.528)
+feed_camera_group = &"shuttle_monitor_feed"
+viewport_size = Vector2i(1280, 720)
+feed_fov = 52.0
+
+[node name="ShuttleExteriorFeedWindow" type="Node3D" parent="." unique_id=11817604]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 1, -0.62500334, 2.608, -0.14470959)
+
+[node name="HullWindowGlass" type="MeshInstance3D" parent="ShuttleExteriorFeedWindow" unique_id=1232294398]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0.08)
+mesh = SubResource("QuadMesh_hull_glass")
+script = ExtResource("3_hullg")
+
+[node name="ShuttleExteriorFeedCamera" parent="ShuttleExteriorFeedWindow" unique_id=337274444 instance=ExtResource("2_camscr")]
+transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 1.0000001, 0.35026112, -0.17354703, -1.0862947)
+viewport_size = Vector2i(1920, 1080)
+feed_fov = 90.0
+
+[node name="CrateEjectPort" type="Marker3D" parent="." unique_id=199126718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.28588736, 2.3649812, -1.2166194)

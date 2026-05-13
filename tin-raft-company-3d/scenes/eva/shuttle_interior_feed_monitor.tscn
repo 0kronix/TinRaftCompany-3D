@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://5hvcdh7xfwb5"]
+
+[ext_resource type="Script" uid="uid://bqj8k2m4feed1" path="res://scenes/eva/shuttle_interior_feed_surface.gd" id="1_surface"]
+
+[node name="ShuttleInteriorMonitorFeed" type="Node3D" unique_id=1632138240]
+script = ExtResource("1_surface")
+feed_camera_group = &"shuttle_monitor_feed"
+noise_amount = 0.07
+chroma_aberration = 0.0065
+scanline_strength = 0.08
+bad_net_mosaic = 44.0
+bad_net_tear = 0.0055
+bad_net_glitch = 0.62
+bad_net_dropout = 0.48
+bad_net_posterize = 0.32
+bad_net_chroma_snow = 0.14
+
+[node name="Screen" type="MeshInstance3D" parent="." unique_id=719096543]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 1.12, 0.42, 0.06)

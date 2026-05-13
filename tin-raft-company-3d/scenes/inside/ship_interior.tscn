@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://rm57d85wudwp"]
+
+[ext_resource type="PackedScene" uid="uid://8u5fk8jtavok" path="res://scenes/items/iron_ore.tscn" id="1_ldtjq"]
+[ext_resource type="PackedScene" path="res://scenes/items/walkie_talkie_radio.tscn" id="2_ry6v6"]
+[ext_resource type="PackedScene" uid="uid://n3rgj6y7psm" path="res://scenes/outside/asteroid.tscn" id="3_ngy73"]
+[ext_resource type="PackedScene" uid="uid://cqi7ifwvg413a" path="res://scenes/inside/capsule.tscn" id="4_3fwq3"]
+[ext_resource type="PackedScene" uid="uid://dk3npfd2tkanp" path="res://scenes/inside/interactable_object.tscn" id="5_o5iqo"]
+[ext_resource type="PackedScene" uid="uid://c8cucjdj88gfr" path="res://scenes/ui/control.tscn" id="6_60fpj"]
+[ext_resource type="PackedScene" uid="uid://bhcfubpbv1drw" path="res://scenes/inside/instrument_panel.tscn" id="7_76sdk"]
+[ext_resource type="PackedScene" uid="uid://ck6205r44kcyg" path="res://scenes/inside/airlock.tscn" id="8_25fxm"]
+[ext_resource type="PackedScene" uid="uid://baqh6q6yfyiji" path="res://scenes/eva/shuttle_helm.tscn" id="9_x4pj0"]
+[ext_resource type="PackedScene" uid="uid://d4p7interwin01" path="res://scenes/eva/shuttle_interior_feed_window.tscn" id="10_win"]
+[ext_resource type="PackedScene" uid="uid://c8m3intermon01" path="res://scenes/eva/shuttle_interior_feed_monitor.tscn" id="11_mon"]
+
+[node name="ShipInterior" type="Node3D" unique_id=1426905377]
+
+[node name="IronOre" parent="." unique_id=236560782 instance=ExtResource("1_ldtjq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.510676, 0.802047, 0.6907731)
+mass = 0.01
+
+[node name="IronOre2" parent="." unique_id=1185685365 instance=ExtResource("1_ldtjq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.802047, -0.6)
+mass = 0.01
+
+[node name="IronOre3" parent="." unique_id=1089877908 instance=ExtResource("1_ldtjq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.802047, 1.3)
+mass = 0.01
+
+[node name="IronOre4" parent="." unique_id=967255096 instance=ExtResource("1_ldtjq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.802047, -0.4)
+mass = 0.01
+
+[node name="WalkieRadio" parent="." unique_id=603479252 instance=ExtResource("2_ry6v6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.802047, 1.95)
+
+[node name="Asteroid" parent="." unique_id=1177571950 instance=ExtResource("3_ngy73")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4304261, -2.1868458)
+debris_scene = ExtResource("1_ldtjq")
+
+[node name="Asteroid2" parent="." unique_id=39394203 instance=ExtResource("3_ngy73")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.677394, 1.900154, 1.9179773)
+debris_scene = ExtResource("1_ldtjq")
+
+[node name="Capsule" parent="." unique_id=495489639 instance=ExtResource("4_3fwq3")]
+transform = Transform3D(0.99999475, -0.0027215548, 0.0017407062, 0.002725274, 0.999994, -0.0021367401, -0.0017348775, 0.0021414754, 0.9999962, 0, 0, 0)
+
+[node name="InteractableObject" parent="." unique_id=2042901232 instance=ExtResource("5_o5iqo")]
+transform = Transform3D(0.84690994, -0.0007189749, -0.5317365, 0.0015534024, 0.99999845, 0.001122019, 0.53173465, -0.0017762488, 0.8469096, 4.4946065, 0.9833138, -4.6446953)
+ui_scene = ExtResource("6_60fpj")
+
+[node name="InteractableObject2" parent="." unique_id=58672771 instance=ExtResource("5_o5iqo")]
+transform = Transform3D(0.99960214, 6.141818e-05, 0.028235497, -5.924405e-05, 1.0000007, -7.7802455e-05, -0.028235521, 7.6098135e-05, 0.99960196, 0.2948803, 0.9944855, -4.7728643)
+ui_scene = ExtResource("6_60fpj")
+
+[node name="StatusPanel" parent="." unique_id=616912823 instance=ExtResource("7_76sdk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.959115, 1.5, -4.5)
+
+[node name="PowerPanel" parent="." unique_id=2077132671 instance=ExtResource("7_76sdk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1082118, 1.5, -4.5)
+
+[node name="SensorPanel" parent="." unique_id=1949445841 instance=ExtResource("7_76sdk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72062695, 1.5, -4.5)
+
+[node name="EvaAirlock" parent="." unique_id=1124123744 instance=ExtResource("8_25fxm")]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 3.1, 1.2, -4.7)
+
+[node name="ShuttleHelm" parent="." unique_id=1297485990 instance=ExtResource("9_x4pj0")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 1.5987414, 3.3959205)
+
+[node name="ShuttleInteriorDisplays" type="Node3D" parent="." unique_id=481138140]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -2.35, 1.48, 3.12)
+
+[node name="Window" parent="ShuttleInteriorDisplays" unique_id=481138141 instance=ExtResource("10_win")]
+
+[node name="Monitor" parent="ShuttleInteriorDisplays" unique_id=481138142 instance=ExtResource("11_mon")]
+
+[node name="PlayerContainer" type="Node3D" parent="." unique_id=1077231708]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0528069, 0)
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="PlayerContainer" unique_id=1593043037]
+spawn_path = NodePath("..")
+
+[node name="CapsuleReturn" type="Marker3D" parent="PlayerContainer" unique_id=893293432 groups=["capsule_return"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.62, 0.6491871, 1.97)

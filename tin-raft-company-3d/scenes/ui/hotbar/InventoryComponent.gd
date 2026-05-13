@@ -94,3 +94,42 @@ func _current_mass() -> float:
 		if slot:
 			total += slot.item.mass * slot.count
 	return total
+
+
+func export_state() -> Array:
+	var out: Array = []
+	for i in range(max_slots):
+		var s = slots[i]
+		if s == null:
+			out.append(null)
+			continue
+		var it: ItemResource = s["item"] as ItemResource
+		var p: String = it.resource_path if it else ""
+		if p.is_empty():
+			out.append(null)
+		else:
+			out.append({"path": p, "count": int(s["count"])})
+	return out
+
+
+func import_state(data: Array) -> void:
+	slots.resize(max_slots)
+	for i in range(max_slots):
+		if i >= data.size() or data[i] == null:
+			slots[i] = null
+			continue
+		var d: Variant = data[i]
+		if typeof(d) != TYPE_DICTIONARY:
+			slots[i] = null
+			continue
+		var path_str: String = str(d.get("path", ""))
+		if path_str.is_empty():
+			slots[i] = null
+			continue
+		var loaded: Resource = load(path_str)
+		if loaded == null or not (loaded is ItemResource):
+			slots[i] = null
+			continue
+		var cnt: int = maxi(1, int(d.get("count", 1)))
+		slots[i] = {"item": loaded as ItemResource, "count": cnt}
+	emit_signal("inventory_changed")

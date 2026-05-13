@@ -6,6 +6,8 @@ class_name ItemResource
 @export var description: String = ""
 @export var icon: Texture2D
 @export var model: PackedScene
+## Сцена для выброса в мир (RigidBody + WorldItem). Пусто — по `id` в StorageCrate.
+@export var world_item_scene: PackedScene
 @export var max_stack: int = 1
 @export var mass: float = 1.0          # для ограничения веса
 @export var is_usable: bool = false    # можно ли использовать из хотбара

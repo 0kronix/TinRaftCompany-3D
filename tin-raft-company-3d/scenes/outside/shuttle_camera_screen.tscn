@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://c2tr6eaemwa13"]
+
+[ext_resource type="Script" path="res://scenes/outside/shuttle_camera_screen.gd" id="1_script"]
+
+[node name="ShuttleCameraScreen" type="Node3D" unique_id=1074288826]
+script = ExtResource("1_script")
+
+[node name="FeedMount" type="Marker3D" parent="." unique_id=1577559082]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 1.12)
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1398433523]
+handle_input_locally = false
+size = Vector2i(640, 360)
+render_target_update_mode = 3
+
+[node name="FeedCamera" type="Camera3D" parent="SubViewport" unique_id=1975961384]
+
+[node name="Screen" type="MeshInstance3D" parent="." unique_id=318536041]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0.52, -0.78)

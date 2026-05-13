@@ -23,6 +23,7 @@ driver/mix_rate=48000
 [autoload]
 
 UIManager="*res://autoload/ui_manager.gd"
+InteractionHintPresenter="*res://autoload/interaction_hint_presenter.gd"
 SettingsManager="*uid://bp1qg1u8t8iqu"
 SoundManager="*res://autoload/sound_manager.gd"
 GameServices="*res://autoload/game_services.gd"

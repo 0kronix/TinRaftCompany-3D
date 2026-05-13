@@ -2,15 +2,17 @@
 
 [ext_resource type="Script" uid="uid://b65trsu7vc0ts" path="res://scenes/inside/world_manager.gd" id="9_wm"]
 [ext_resource type="PackedScene" uid="uid://di2y3c3erx57x" path="res://scenes/eva/eva_zone.tscn" id="11_eva"]
-
+[ext_resource type="PackedScene" uid="uid://b6w4systemchat" path="res://scenes/ui/system_chat_ui.tscn" id="12_chat"]
 [node name="Inside" type="Node3D" unique_id=237176115]
 script = ExtResource("9_wm")
 
 [node name="EVA" parent="." unique_id=2087168387 instance=ExtResource("11_eva")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.567353)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.85515404)
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=425099980]
 layer = 10
+
+[node name="SystemChat" parent="UILayer" instance=ExtResource("12_chat")]
 
 [node name="WorldObjects" type="Node3D" parent="." unique_id=1295236433]
 

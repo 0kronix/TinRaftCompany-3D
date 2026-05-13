@@ -13,10 +13,10 @@ func _ready():
 	Label3DHint.prepare_hidden(label)
 
 func show_hint():
-	Label3DHint.tween_show(self, label)
+	pass
 
 func hide_hint():
-	Label3DHint.tween_hide(self, label)
+	pass
 
 func interact(_player):
 	var command := build_interaction_command()

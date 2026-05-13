@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://bu7xnb6oyh6js"]
+
+[ext_resource type="Script" uid="uid://j7v32rwrj1gb" path="res://scenes/items/storage_crate_ui.gd" id="1_ui"]
+
+[node name="StorageCrateUI" type="Control" unique_id=2066802504]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ui")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=863608631]
+layer = 12
+
+[node name="Panel" type="PanelContainer" parent="CanvasLayer" unique_id=1737543870]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -420.0
+offset_top = -260.0
+offset_right = 420.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/Panel" unique_id=1840009609]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/Panel/Margin" unique_id=2023498324]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CanvasLayer/Panel/Margin/VBox" unique_id=63670815]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Ящик"
+horizontal_alignment = 1
+
+[node name="Grids" type="HBoxContainer" parent="CanvasLayer/Panel/Margin/VBox" unique_id=764635403]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="PlayerColumn" type="VBoxContainer" parent="CanvasLayer/Panel/Margin/VBox/Grids" unique_id=1063086231]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlLabel" type="Label" parent="CanvasLayer/Panel/Margin/VBox/Grids/PlayerColumn" unique_id=420449110]
+layout_mode = 2
+text = "Вы"
+
+[node name="Slots" type="HBoxContainer" parent="CanvasLayer/Panel/Margin/VBox/Grids/PlayerColumn" unique_id=739071823]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CrateColumn" type="VBoxContainer" parent="CanvasLayer/Panel/Margin/VBox/Grids" unique_id=2135240184]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CrLabel" type="Label" parent="CanvasLayer/Panel/Margin/VBox/Grids/CrateColumn" unique_id=1318345493]
+layout_mode = 2
+text = "Ящик"
+
+[node name="Slots" type="GridContainer" parent="CanvasLayer/Panel/Margin/VBox/Grids/CrateColumn" unique_id=602162165]
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 5
+
+[node name="Buttons" type="HBoxContainer" parent="CanvasLayer/Panel/Margin/VBox" unique_id=1237835271]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="EjectButton" type="Button" parent="CanvasLayer/Panel/Margin/VBox/Buttons" unique_id=621629189]
+visible = false
+layout_mode = 2
+text = "Выбросить в космос"
+
+[node name="CloseButton" type="Button" parent="CanvasLayer/Panel/Margin/VBox/Buttons" unique_id=1380309637]
+layout_mode = 2
+text = "Закрыть"
