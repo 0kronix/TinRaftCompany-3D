@@ -42,6 +42,8 @@ shader_parameter/brightness = 0.95
 shader_parameter/tint_color = Color(0.95, 0.97, 0.91, 1)
 shader_parameter/red_vignette_strength = 0.0
 shader_parameter/red_vignette_color = Color(1, 0.02, 0, 1)
+shader_parameter/pressure_vignette_strength = 0.0
+shader_parameter/pressure_vignette_color = Color(0.55, 0.78, 1, 1)
 shader_parameter/barrel_distortion = 0.05
 
 [node name="player" type="CharacterBody3D" unique_id=914611990 groups=["player"]]

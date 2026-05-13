@@ -10,6 +10,8 @@ uniform float brightness : hint_range(0.0, 2.0) = 0.95;
 uniform vec3 tint_color : source_color = vec3(0.95, 0.97, 0.91);
 uniform float red_vignette_strength : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 red_vignette_color : source_color = vec3(1.0, 0.02, 0.0);
+uniform float pressure_vignette_strength : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 pressure_vignette_color : source_color = vec3(0.55, 0.78, 1.0);
 
 // Параметр искривления экрана
 uniform float barrel_distortion : hint_range(0.0, 0.5) = 0.05;
@@ -68,9 +70,11 @@ void fragment() {
     // Тинт и яркость
     color *= tint_color * brightness;
 
-    // Красная виньетка для критически низкого кислорода.
+    // Виньетки для критически низкого кислорода и давления.
     float red_edge = smoothstep(0.18, 1.28, dot(vigUV, vigUV));
     float red_pulse = 0.78 + sin(TIME * 4.0) * 0.22;
+    float pressure_pulse = 0.72 + sin(TIME * 2.6) * 0.28;
+    color = mix(color, pressure_vignette_color, pressure_vignette_strength * red_edge * pressure_pulse);
     color = mix(color, red_vignette_color, red_vignette_strength * red_edge * red_pulse);
     
     COLOR = vec4(color, 1.0);

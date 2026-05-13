@@ -12,9 +12,19 @@ const VITAL_MIN_VALUE := 0.0
 const VITAL_DEFAULT_MAX := 100.0
 const PLAYER_OXYGEN_CONSUMPTION_PER_SECOND := 0.1
 const PLAYER_OXYGEN_RESTORE_PER_SECOND := 0.1
-const PLAYER_SUFFOCATION_DAMAGE_PER_SECOND := 10.0
+const PLAYER_PRESSURE_LOSS_PER_SECOND := 1
+const PLAYER_PRESSURE_RESTORE_PER_SECOND := 1
+const SUFFOCATION_DAMAGE_MIN := 9.0
+const SUFFOCATION_DAMAGE_MAX := 11.0
+const SUFFOCATION_DAMAGE_INTERVAL_MIN := 1.0
+const SUFFOCATION_DAMAGE_INTERVAL_MAX := 2.0
+const PRESSURE_DAMAGE_MIN := 15.0
+const PRESSURE_DAMAGE_MAX := 25.0
+const PRESSURE_DAMAGE_INTERVAL_MIN := 0.5
+const PRESSURE_DAMAGE_INTERVAL_MAX := 1.0
 const SHIP_OXYGEN_REFILL_REQUEST_INTERVAL := 0.25
 const LOW_OXYGEN_WARNING_PERCENT := 20.0
+const LOW_PRESSURE_WARNING_PERCENT := 20.0
 
 ## Open-space EVA: 6DOF — включается телепортом с шлюза (NetworkManager) или в space_eva.
 @export var eva_mode: bool = false
@@ -109,11 +119,13 @@ var current_oxygen: float = VITAL_DEFAULT_MAX:
 var current_pressure: float = VITAL_DEFAULT_MAX:
 	set(value):
 		current_pressure = clampf(value, VITAL_MIN_VALUE, max_pressure)
-		_emit_vitals_changed()
+		_on_current_pressure_changed()
 @export_group("")
 var _ship_oxygen_breath_pending: float = 0.0
 var _ship_oxygen_refill_pending: float = 0.0
 var _ship_oxygen_refill_timer: float = 0.0
+var _suffocation_damage_timer: float = 0.0
+var _pressure_damage_timer: float = 0.0
 var _oxygen_warning_material: ShaderMaterial = null
 var _death_overlay: Control = null
 ## Кратковременно при модальном UI (E на интерактиве) — ввод/физика отключены.
@@ -297,7 +309,9 @@ func _physics_process(delta: float) -> void:
 		_update_voice_tx_dot()
 		if not is_dead:
 			_update_player_oxygen(delta)
+			_update_player_pressure(delta)
 			_update_suffocation_damage(delta)
+			_update_pressure_damage(delta)
 	if not is_multiplayer_authority():
 		return
 	if is_dead:
@@ -595,6 +609,11 @@ func _on_current_oxygen_changed() -> void:
 	_update_oxygen_warning_effect()
 
 
+func _on_current_pressure_changed() -> void:
+	_emit_vitals_changed()
+	_update_pressure_warning_effect()
+
+
 func _setup_oxygen_warning_effect() -> void:
 	var shader_rect := get_node_or_null("ShaiderLayer/ColorRect") as ColorRect
 	if shader_rect == null:
@@ -605,6 +624,7 @@ func _setup_oxygen_warning_effect() -> void:
 	_oxygen_warning_material = shader_material.duplicate() as ShaderMaterial
 	shader_rect.material = _oxygen_warning_material
 	_update_oxygen_warning_effect()
+	_update_pressure_warning_effect()
 
 
 func _update_oxygen_warning_effect() -> void:
@@ -619,10 +639,50 @@ func _update_oxygen_warning_effect() -> void:
 	_oxygen_warning_material.set_shader_parameter("red_vignette_strength", warning_strength)
 
 
+func _update_pressure_warning_effect() -> void:
+	if _oxygen_warning_material == null:
+		return
+	var pressure_percent := 100.0
+	if max_pressure > VITAL_MIN_VALUE:
+		pressure_percent = current_pressure / max_pressure * 100.0
+	var warning_strength := 0.0
+	if pressure_percent < LOW_PRESSURE_WARNING_PERCENT:
+		warning_strength = clampf((LOW_PRESSURE_WARNING_PERCENT - pressure_percent) / LOW_PRESSURE_WARNING_PERCENT, 0.0, 1.0)
+	_oxygen_warning_material.set_shader_parameter("pressure_vignette_strength", warning_strength)
+
+
 func _update_suffocation_damage(delta: float) -> void:
 	if current_oxygen > VITAL_MIN_VALUE:
+		_suffocation_damage_timer = 0.0
 		return
-	change_health(-PLAYER_SUFFOCATION_DAMAGE_PER_SECOND * delta)
+	if _suffocation_damage_timer <= 0.0:
+		_suffocation_damage_timer = _next_suffocation_damage_interval()
+	_suffocation_damage_timer -= delta
+	if _suffocation_damage_timer > 0.0:
+		return
+	change_health(-randf_range(SUFFOCATION_DAMAGE_MIN, SUFFOCATION_DAMAGE_MAX))
+	_suffocation_damage_timer = _next_suffocation_damage_interval()
+
+
+func _next_suffocation_damage_interval() -> float:
+	return randf_range(SUFFOCATION_DAMAGE_INTERVAL_MIN, SUFFOCATION_DAMAGE_INTERVAL_MAX)
+
+
+func _update_pressure_damage(delta: float) -> void:
+	if current_pressure > VITAL_MIN_VALUE:
+		_pressure_damage_timer = 0.0
+		return
+	if _pressure_damage_timer <= 0.0:
+		_pressure_damage_timer = _next_pressure_damage_interval()
+	_pressure_damage_timer -= delta
+	if _pressure_damage_timer > 0.0:
+		return
+	change_health(-randf_range(PRESSURE_DAMAGE_MIN, PRESSURE_DAMAGE_MAX))
+	_pressure_damage_timer = _next_pressure_damage_interval()
+
+
+func _next_pressure_damage_interval() -> float:
+	return randf_range(PRESSURE_DAMAGE_INTERVAL_MIN, PRESSURE_DAMAGE_INTERVAL_MAX)
 
 
 func apply_oxygen_exchange_from_ship(breath_amount: float, granted_amount: float) -> void:
@@ -656,7 +716,19 @@ func _update_player_oxygen(delta: float) -> void:
 		_ship_oxygen_refill_timer = 0.0
 
 
+func _update_player_pressure(delta: float) -> void:
+	if _can_refill_pressure_from_ship():
+		if current_pressure < max_pressure:
+			change_pressure(PLAYER_PRESSURE_RESTORE_PER_SECOND * delta)
+		return
+	change_pressure(-PLAYER_PRESSURE_LOSS_PER_SECOND * delta)
+
+
 func _can_refill_oxygen_from_ship() -> bool:
+	return not eva_mode or eva_shuttle_tether_attached
+
+
+func _can_refill_pressure_from_ship() -> bool:
 	return not eva_mode or eva_shuttle_tether_attached
 
 
