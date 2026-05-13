@@ -11,10 +11,14 @@ const PressureComponentScript := preload("res://scripts/gameplay/survival/compon
 const TemperatureComponentScript := preload("res://scripts/gameplay/survival/components/temperature_component.gd")
 const PowerComponentScript := preload("res://scripts/gameplay/survival/components/power_component.gd")
 
+const SHIP_OXYGEN_RESERVE_MAX: float = 100.0
+
 var oxygen: OxygenComponent
 var pressure: PressureComponent
 var temperature: TemperatureComponent
 var power: PowerComponent
+var ship_oxygen_reserve: float = SHIP_OXYGEN_RESERVE_MAX
+var ship_oxygen_reserve_max: float = SHIP_OXYGEN_RESERVE_MAX
 
 var _has_hull_breach: bool = false
 var _heavy_load: bool = false
@@ -55,6 +59,22 @@ func set_anomaly_level(level: float) -> void:
 func get_snapshot() -> Dictionary:
 	return _build_snapshot()
 
+
+func consume_ship_oxygen(amount: float) -> float:
+	if amount <= 0.0:
+		return 0.0
+	var granted := minf(amount, ship_oxygen_reserve)
+	ship_oxygen_reserve = maxf(0.0, ship_oxygen_reserve - granted)
+	if granted > 0.0:
+		_emit_snapshot(true)
+	return granted
+
+
+func set_ship_oxygen_reserve(current: float, max_value: float = SHIP_OXYGEN_RESERVE_MAX) -> void:
+	ship_oxygen_reserve_max = maxf(max_value, 1.0)
+	ship_oxygen_reserve = clampf(current, 0.0, ship_oxygen_reserve_max)
+	_emit_snapshot(true)
+
 func _init_components() -> void:
 	oxygen = OxygenComponentScript.new()
 	pressure = PressureComponentScript.new()
@@ -69,8 +89,12 @@ func _emit_snapshot(force: bool) -> void:
 		_check_critical(snapshot)
 
 func _build_snapshot() -> Dictionary:
+	var reserve_percent := ship_oxygen_reserve / ship_oxygen_reserve_max * 100.0
 	return {
 		"oxygen": oxygen.snapshot(),
+		"ship_oxygen_reserve": ship_oxygen_reserve,
+		"ship_oxygen_reserve_max": ship_oxygen_reserve_max,
+		"ship_oxygen_reserve_percent": reserve_percent,
 		"pressure": pressure.snapshot(),
 		"temperature": temperature.snapshot(),
 		"power": power.snapshot(),
@@ -83,6 +107,8 @@ func _build_snapshot() -> Dictionary:
 func _check_critical(snapshot: Dictionary) -> void:
 	if snapshot["oxygen"] <= 20.0:
 		critical_state_entered.emit("oxygen", snapshot["oxygen"])
+	if float(snapshot.get("ship_oxygen_reserve_percent", 100.0)) <= 20.0:
+		critical_state_entered.emit("ship_oxygen_reserve", snapshot["ship_oxygen_reserve"])
 	if snapshot["pressure"] <= 25.0:
 		critical_state_entered.emit("pressure", snapshot["pressure"])
 	if snapshot["power"] <= 15.0:

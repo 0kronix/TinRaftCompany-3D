@@ -59,7 +59,7 @@ func _get_oneshot_stream(sound_id: String) -> AudioStream:
 
 ## Одноразовый SFX в мире (ноги/корпус игрока). Удаляется после окончания.
 func play_interior_at(parent: Node3D, sound_id: String, volume_db_offset: float = 0.0) -> void:
-	if parent == null or not parent.is_inside_tree():
+	if not _is_live_node3d(parent):
 		return
 	var base := _get_oneshot_stream(sound_id)
 	if base == null:
@@ -79,6 +79,10 @@ func play_interior_at(parent: Node3D, sound_id: String, volume_db_offset: float 
 	ap.play()
 
 
+func _is_live_node3d(node: Node3D) -> bool:
+	return node != null and is_instance_valid(node) and node.is_inside_tree()
+
+
 func _prepare_loop_stream(s: AudioStream) -> void:
 	if s is AudioStreamOggVorbis:
 		(s as AudioStreamOggVorbis).loop = true
@@ -87,11 +91,19 @@ func _prepare_loop_stream(s: AudioStream) -> void:
 
 
 func _ensure_loop_player(slot: StringName, sound_id: String, parent: Node3D, bus_name: String) -> AudioStreamPlayer3D:
-	if _loops.has(slot):
-		var existing: AudioStreamPlayer3D = _loops[slot] as AudioStreamPlayer3D
-		if is_instance_valid(existing) and existing.get_parent() == parent:
-			return existing
+	if not _is_live_node3d(parent):
 		_loops.erase(slot)
+		return null
+	if _loops.has(slot):
+		var existing_value = _loops[slot]
+		# Смена сцены освобождает дочерние loop-player'ы раньше, чем autoload успевает очистить словарь.
+		if not is_instance_valid(existing_value):
+			_loops.erase(slot)
+		else:
+			var existing: AudioStreamPlayer3D = existing_value as AudioStreamPlayer3D
+			if existing != null and existing.get_parent() == parent:
+				return existing
+			_loops.erase(slot)
 	var stream := _get_stream(sound_id)
 	if stream == null:
 		return null
@@ -106,12 +118,21 @@ func _ensure_loop_player(slot: StringName, sound_id: String, parent: Node3D, bus
 	ap.emission_angle_enabled = false
 	parent.add_child(ap)
 	_loops[slot] = ap
+	ap.tree_exited.connect(_on_loop_player_exited.bind(slot, ap))
 	return ap
+
+
+func _on_loop_player_exited(slot: StringName, player: AudioStreamPlayer3D) -> void:
+	if not _loops.has(slot):
+		return
+	var current = _loops[slot]
+	if not is_instance_valid(current) or current == player:
+		_loops.erase(slot)
 
 
 ## Громкость 0..1 от силы тяги EVA; позиция источника в локале тела по направлению **ввода** (кнопки), не скорости.
 func set_eva_jetpack_loop(parent_player: Node3D, thrust_01: float, thrust_dir_body: Vector3 = Vector3.ZERO) -> void:
-	if parent_player == null:
+	if not _is_live_node3d(parent_player):
 		return
 	var slot: StringName = StringName("eva_jet_" + parent_player.name)
 	var ap := _ensure_loop_player(slot, "eva_jetpack", parent_player, LOOP_BUS_EVA)
@@ -129,7 +150,7 @@ func set_eva_jetpack_loop(parent_player: Node3D, thrust_01: float, thrust_dir_bo
 
 ## Один луп на шаттл по имени узла; intensity 0..1 от основного + РСУ.
 func set_shuttle_engines_loop(shuttle: Node3D, intensity_01: float) -> void:
-	if shuttle == null:
+	if not _is_live_node3d(shuttle):
 		return
 	var slot: StringName = StringName("shuttle_eng_" + shuttle.name)
 	var ap := _ensure_loop_player(slot, "shuttle_engines", shuttle, LOOP_BUS_SHUTTLE)
@@ -140,7 +161,7 @@ func set_shuttle_engines_loop(shuttle: Node3D, intensity_01: float) -> void:
 
 ## Трос на пределе длины (0..1) — лёгкий луп на SFX.
 func set_tether_stress_loop(parent: Node3D, strain_01: float) -> void:
-	if parent == null:
+	if not _is_live_node3d(parent):
 		return
 	var slot: StringName = StringName("tether_str_" + parent.name)
 	var ap := _ensure_loop_player(slot, "tether_stress", parent, INTERIOR_SFX_BUS)
@@ -163,7 +184,7 @@ func play_tether_reel_tick(parent: Node3D, extending: bool, volume_db_offset: fl
 
 
 func _apply_loop_intensity(ap: AudioStreamPlayer3D, thrust_01: float, db_quiet: float, db_loud: float) -> void:
-	if ap == null:
+	if ap == null or not is_instance_valid(ap):
 		return
 	var t: float = clampf(thrust_01, 0.0, 1.0)
 	if t < 0.03:

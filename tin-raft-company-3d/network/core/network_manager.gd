@@ -293,6 +293,29 @@ func send_shuttle_tether_toggle_to_peer(peer_id: int, target_path_str: String) -
 	_rpc_shuttle_tether_toggle.rpc_id(peer_id, target_path_str)
 
 
+func revive_player_peer(peer_id: int, player_path_str: String) -> void:
+	if peer_id <= 0 or player_path_str.is_empty():
+		return
+	if peer_id == multiplayer.get_unique_id():
+		_apply_revive_player(player_path_str)
+		return
+	_rpc_revive_player.rpc_id(peer_id, player_path_str)
+
+
+func request_ship_oxygen_refill(player: Node3D, breath_amount: float, refill_amount: float = 0.0) -> void:
+	if player == null:
+		return
+	var safe_breath := clampf(breath_amount, 0.0, 5.0)
+	var safe_refill := clampf(refill_amount, 0.0, 5.0)
+	if safe_breath <= 0.0 and safe_refill <= 0.0:
+		return
+	var player_path := String(player.get_path())
+	if is_session_active() and not multiplayer.is_server():
+		_rpc_request_ship_oxygen_refill.rpc_id(1, multiplayer.get_unique_id(), player_path, safe_breath, safe_refill)
+		return
+	_grant_ship_oxygen_refill(multiplayer.get_unique_id(), player_path, safe_breath, safe_refill)
+
+
 @rpc("authority", "reliable")
 func _rpc_grant_pickup(item_data_path: String, count: int) -> void:
 	InteractionCommandService.apply_pickup_grant_local(get_tree(), item_data_path, count)
@@ -303,6 +326,84 @@ func _rpc_open_interactable_ui(res_path: String, target_path_str: String) -> voi
 	if multiplayer.is_server():
 		return
 	InteractionCommandService.show_interactable_ui_client(res_path, target_path_str)
+
+
+@rpc("authority", "reliable")
+func _rpc_revive_player(player_path_str: String) -> void:
+	if multiplayer.is_server():
+		return
+	_apply_revive_player(player_path_str)
+
+
+func _apply_revive_player(player_path_str: String) -> void:
+	var player := MultiplayerNodeResolver.resolve(get_tree(), player_path_str)
+	if player != null and player.has_method("apply_revive_from_server"):
+		player.apply_revive_from_server()
+
+
+@rpc("any_peer", "reliable")
+func _rpc_request_ship_oxygen_refill(sender_id: int, player_path_str: String, breath_amount: float, refill_amount: float) -> void:
+	if not multiplayer.is_server():
+		return
+	if multiplayer.get_remote_sender_id() != sender_id:
+		return
+	var player := MultiplayerNodeResolver.resolve(get_tree(), player_path_str)
+	if player == null:
+		return
+	if player.get_multiplayer_authority() != sender_id:
+		return
+	_grant_ship_oxygen_refill(
+		sender_id,
+		player_path_str,
+		clampf(breath_amount, 0.0, 5.0),
+		clampf(refill_amount, 0.0, 5.0)
+	)
+
+
+func _grant_ship_oxygen_refill(peer_id: int, player_path_str: String, breath_amount: float, refill_amount: float) -> void:
+	var service := get_node_or_null("/root/GameServices/CapsuleStateService")
+	if service == null or not service.has_method("consume_ship_oxygen"):
+		return
+	var requested_amount := breath_amount + refill_amount
+	var granted: float = service.consume_ship_oxygen(requested_amount)
+	_broadcast_ship_oxygen_reserve_snapshot()
+	if peer_id == multiplayer.get_unique_id():
+		_apply_ship_oxygen_refill(player_path_str, breath_amount, granted)
+		return
+	_rpc_ship_oxygen_refill.rpc_id(peer_id, player_path_str, breath_amount, granted)
+
+
+@rpc("authority", "reliable")
+func _rpc_ship_oxygen_refill(player_path_str: String, breath_amount: float, granted_amount: float) -> void:
+	if multiplayer.is_server():
+		return
+	_apply_ship_oxygen_refill(player_path_str, breath_amount, granted_amount)
+
+
+func _apply_ship_oxygen_refill(player_path_str: String, breath_amount: float, granted_amount: float) -> void:
+	var player := MultiplayerNodeResolver.resolve(get_tree(), player_path_str)
+	if player != null and player.has_method("apply_oxygen_exchange_from_ship"):
+		player.apply_oxygen_exchange_from_ship(breath_amount, granted_amount)
+
+
+func _broadcast_ship_oxygen_reserve_snapshot() -> void:
+	var service := get_node_or_null("/root/GameServices/CapsuleStateService")
+	if service == null:
+		return
+	var snapshot: Dictionary = service.get_snapshot()
+	var current := float(snapshot.get("ship_oxygen_reserve", 0.0))
+	var max_value := float(snapshot.get("ship_oxygen_reserve_max", 1.0))
+	if is_session_active() and multiplayer.is_server():
+		_rpc_ship_oxygen_reserve_snapshot.rpc(current, max_value)
+
+
+@rpc("authority", "reliable")
+func _rpc_ship_oxygen_reserve_snapshot(current: float, max_value: float) -> void:
+	if multiplayer.is_server():
+		return
+	var service := get_node_or_null("/root/GameServices/CapsuleStateService")
+	if service != null and service.has_method("set_ship_oxygen_reserve"):
+		service.set_ship_oxygen_reserve(current, max_value)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

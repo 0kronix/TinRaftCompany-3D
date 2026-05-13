@@ -1,7 +1,19 @@
 extends CharacterBody3D
 
+signal vitals_changed(snapshot: Dictionary)
+
 const JUMP_VELOCITY = 4.5
 const DEFAULT_MOUSE_SENSITIVITY := 0.003
+const LOBBY_SCENE := "res://scenes/network/lobby.tscn"
+const DEBUG_DEATH_KEY := KEY_K
+const DEAD_BODY_PUSH_RADIUS := 0.95
+const DEAD_BODY_PUSH_ACCEL := 7.5
+const REVIVE_COMMAND_TYPE := "revive_player"
+const VITAL_MIN_VALUE := 0.0
+const VITAL_DEFAULT_MAX := 100.0
+const PLAYER_OXYGEN_CONSUMPTION_PER_SECOND := 0.125
+const PLAYER_OXYGEN_RESTORE_PER_SECOND := 0.125
+const SHIP_OXYGEN_REFILL_REQUEST_INTERVAL := 0.25
 
 ## Open-space EVA: 6DOF — включается телепортом с шлюза (NetworkManager) или в space_eva.
 @export var eva_mode: bool = false
@@ -28,6 +40,10 @@ func _setup_sync() -> void:
 	var config := SceneReplicationConfig.new()
 	config.add_property(NodePath(".:position"))
 	config.add_property(NodePath(".:rotation"))
+	config.add_property(NodePath(".:is_dead"))
+	config.add_property(NodePath(".:current_health"))
+	config.add_property(NodePath(".:current_oxygen"))
+	config.add_property(NodePath(".:current_pressure"))
 	config.add_property(NodePath(".:eva_mode"))
 	config.add_property(NodePath(".:eva_jetpack_thrust_strength"))
 	config.add_property(NodePath(".:eva_jetpack_thrust_dir"))
@@ -63,6 +79,41 @@ const EVA_SPEED_CAP: float = 60.0
 var current_hovered = null
 var inventory_open  := false
 var menu_open       := false
+var is_dead: bool = false:
+	set(value):
+		is_dead = value
+		if not is_dead:
+			hide_hint()
+@export_group("Player vitals")
+@export var max_health: float = VITAL_DEFAULT_MAX:
+	set(value):
+		max_health = maxf(value, 1.0)
+		current_health = clampf(current_health, VITAL_MIN_VALUE, max_health)
+@export var max_oxygen: float = VITAL_DEFAULT_MAX:
+	set(value):
+		max_oxygen = maxf(value, 1.0)
+		current_oxygen = clampf(current_oxygen, VITAL_MIN_VALUE, max_oxygen)
+@export var max_pressure: float = VITAL_DEFAULT_MAX:
+	set(value):
+		max_pressure = maxf(value, 1.0)
+		current_pressure = clampf(current_pressure, VITAL_MIN_VALUE, max_pressure)
+var current_health: float = VITAL_DEFAULT_MAX:
+	set(value):
+		current_health = clampf(value, VITAL_MIN_VALUE, max_health)
+		_emit_vitals_changed()
+var current_oxygen: float = VITAL_DEFAULT_MAX:
+	set(value):
+		current_oxygen = clampf(value, VITAL_MIN_VALUE, max_oxygen)
+		_emit_vitals_changed()
+var current_pressure: float = VITAL_DEFAULT_MAX:
+	set(value):
+		current_pressure = clampf(value, VITAL_MIN_VALUE, max_pressure)
+		_emit_vitals_changed()
+@export_group("")
+var _ship_oxygen_breath_pending: float = 0.0
+var _ship_oxygen_refill_pending: float = 0.0
+var _ship_oxygen_refill_timer: float = 0.0
+var _death_overlay: Control = null
 ## Кратковременно при модальном UI (E на интерактиве) — ввод/физика отключены.
 var modal_ui_block: bool = false
 var mouse_sensitivity: float = DEFAULT_MOUSE_SENSITIVITY
@@ -131,6 +182,7 @@ func _ready() -> void:
 		_setup_local_player()
 	else:
 		_setup_puppet()
+	_emit_vitals_changed()
 
 
 ## Called for the local player — the one this peer controls.
@@ -179,6 +231,12 @@ func set_modal_ui_block(v: bool) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
 		return
+	if _is_debug_death_event(event):
+		_die()
+		return
+	if is_dead:
+		_process_dead_look_input(event)
+		return
 	if modal_ui_block:
 		return
 
@@ -223,7 +281,8 @@ func _update_radio_ptt_voice_manager() -> void:
 	if vm == null or not vm.has_method("set_radio_ptt_active"):
 		return
 	var allow: bool = (
-		not menu_open
+		not is_dead
+		and not menu_open
 		and not inventory_open
 		and not modal_ui_block
 		and _holding_walkie_talkie()
@@ -236,7 +295,12 @@ func _physics_process(delta: float) -> void:
 	if is_multiplayer_authority():
 		_update_radio_ptt_voice_manager()
 		_update_voice_tx_dot()
+		if not is_dead:
+			_update_player_oxygen(delta)
 	if not is_multiplayer_authority():
+		return
+	if is_dead:
+		_physics_process_dead(delta)
 		return
 	if modal_ui_block:
 		velocity = Vector3.ZERO
@@ -379,6 +443,64 @@ func _physics_process_eva(delta: float) -> void:
 	_update_hover()
 
 
+func _physics_process_dead(delta: float) -> void:
+	eva_jetpack_thrust_strength = 0.0
+	eva_jetpack_thrust_dir = Vector3.ZERO
+	_hide_hover_hint()
+
+	if eva_mode:
+		up_direction = global_transform.basis.y
+		_apply_dead_body_player_push(delta)
+		if eva_shuttle_tether_attached:
+			if _tether_anchor == null or not is_instance_valid(_tether_anchor) or _rope_sim == null:
+				shuttle_tether_detach()
+			else:
+				_update_tether_payed_smooth_and_audio(delta)
+				var w3d: World3D = get_world_3d()
+				if w3d != null:
+					_rope_sim.step(
+						_tether_anchor.global_position,
+						_shuttle_tether_attach_point_global(),
+						delta,
+						self,
+						w3d.direct_space_state,
+						get_rid(),
+						_tether_rope_static_exclude_for_sim()
+					)
+		move_and_slide()
+		if eva_shuttle_tether_attached and _rope_sim != null and _tether_anchor != null and is_instance_valid(_tether_anchor):
+			_rope_sim.clamp_character_straight_line(_tether_anchor.global_position, self)
+			SoundManager.set_tether_stress_loop(self, _rope_sim.get_tether_strain_for_audio())
+		_update_shuttle_tether_visual()
+	else:
+		if not is_on_floor():
+			velocity.y -= gravity * (fall_multiplier if velocity.y < 0 else 1.0) * delta
+		else:
+			velocity.x = move_toward(velocity.x, 0.0, friction * 0.15 * delta)
+			velocity.z = move_toward(velocity.z, 0.0, friction * 0.15 * delta)
+		_apply_dead_body_player_push(delta)
+		move_and_slide()
+
+	_sync_eva_camera_physics_hints()
+
+
+func _apply_dead_body_player_push(delta: float) -> void:
+	var player_container := get_parent()
+	if player_container == null:
+		return
+	for node: Node in player_container.get_children():
+		if node == self or not (node is Node3D):
+			continue
+		var offset: Vector3 = global_position - (node as Node3D).global_position
+		if not eva_mode:
+			offset.y = 0.0
+		var distance := offset.length()
+		if distance <= 0.001 or distance >= DEAD_BODY_PUSH_RADIUS:
+			continue
+		var push_ratio := 1.0 - (distance / DEAD_BODY_PUSH_RADIUS)
+		velocity += offset.normalized() * DEAD_BODY_PUSH_ACCEL * push_ratio * delta
+
+
 func _process(_delta: float) -> void:
 	if is_instance_valid(head):
 		if eva_mode:
@@ -413,6 +535,93 @@ func _update_hover() -> void:
 		current_hovered = null
 
 
+func _hide_hover_hint() -> void:
+	if current_hovered != null and is_instance_valid(current_hovered) and current_hovered.has_method("hide_hint"):
+		current_hovered.hide_hint()
+	current_hovered = null
+
+
+func get_vitals_snapshot() -> Dictionary:
+	return {
+		"peer_id": _peer_id_from_player_name(),
+		"health": current_health,
+		"max_health": max_health,
+		"oxygen": current_oxygen,
+		"max_oxygen": max_oxygen,
+		"pressure": current_pressure,
+		"max_pressure": max_pressure
+	}
+
+
+func set_player_vitals(health: float, oxygen: float, pressure: float) -> void:
+	current_health = health
+	current_oxygen = oxygen
+	current_pressure = pressure
+
+
+func change_player_vitals(health_delta: float, oxygen_delta: float, pressure_delta: float) -> void:
+	change_health(health_delta)
+	change_oxygen(oxygen_delta)
+	change_pressure(pressure_delta)
+
+
+func change_health(amount: float) -> void:
+	current_health += amount
+
+
+func change_oxygen(amount: float) -> void:
+	current_oxygen += amount
+
+
+func change_pressure(amount: float) -> void:
+	current_pressure += amount
+
+
+func reset_player_vitals() -> void:
+	current_health = max_health
+	current_oxygen = max_oxygen
+	current_pressure = max_pressure
+
+
+func apply_oxygen_exchange_from_ship(breath_amount: float, granted_amount: float) -> void:
+	var uncovered_breath := maxf(0.0, breath_amount - granted_amount)
+	if uncovered_breath > 0.0:
+		change_oxygen(-uncovered_breath)
+		return
+	var refill_amount := maxf(0.0, granted_amount - breath_amount)
+	if refill_amount > 0.0:
+		change_oxygen(refill_amount)
+
+
+func _update_player_oxygen(delta: float) -> void:
+	var spent := PLAYER_OXYGEN_CONSUMPTION_PER_SECOND * delta
+	if spent <= 0.0:
+		return
+	if _can_refill_oxygen_from_ship():
+		_ship_oxygen_breath_pending += spent
+		var missing_after_pending := maxf(0.0, max_oxygen - current_oxygen - _ship_oxygen_refill_pending)
+		_ship_oxygen_refill_pending += minf(missing_after_pending, PLAYER_OXYGEN_RESTORE_PER_SECOND * delta)
+		_ship_oxygen_refill_timer += delta
+		if _ship_oxygen_refill_timer >= SHIP_OXYGEN_REFILL_REQUEST_INTERVAL:
+			NetworkManager.request_ship_oxygen_refill(self, _ship_oxygen_breath_pending, _ship_oxygen_refill_pending)
+			_ship_oxygen_breath_pending = 0.0
+			_ship_oxygen_refill_pending = 0.0
+			_ship_oxygen_refill_timer = 0.0
+	else:
+		change_oxygen(-spent)
+		_ship_oxygen_breath_pending = 0.0
+		_ship_oxygen_refill_pending = 0.0
+		_ship_oxygen_refill_timer = 0.0
+
+
+func _can_refill_oxygen_from_ship() -> bool:
+	return not eva_mode
+
+
+func _emit_vitals_changed() -> void:
+	vitals_changed.emit(get_vitals_snapshot())
+
+
 func _try_interact() -> void:
 	ray.force_raycast_update()
 	if not ray.is_colliding():
@@ -424,6 +633,8 @@ func _try_interact() -> void:
 		return
 	if obj.has_method("build_interaction_command"):
 		var command: Dictionary = obj.build_interaction_command()
+		if command.is_empty():
+			return
 		var ctype: String = str(command.get("type", ""))
 		if ctype != "pickup_world_item":
 			SoundManager.play_interior_at(self, "interact_use", -2.0)
@@ -437,6 +648,212 @@ func _try_interact() -> void:
 		SoundManager.play_interior_at(self, "interact_use", -2.0)
 		# Fallback for objects without the command pattern.
 		obj.interact(self)
+
+
+func interact(_actor: Node3D) -> void:
+	if not is_dead:
+		return
+
+
+func build_interaction_command() -> Dictionary:
+	if not is_dead:
+		return {}
+	return {
+		"type": REVIVE_COMMAND_TYPE,
+		"target_path": get_path()
+	}
+
+
+func server_validate_interaction(_actor: Node3D) -> bool:
+	if not is_dead:
+		return false
+	var target_peer_id := _peer_id_from_player_name()
+	return target_peer_id > 0
+
+
+func server_apply_interaction(_actor: Node3D, command: Dictionary) -> bool:
+	if str(command.get("type", "")) != REVIVE_COMMAND_TYPE:
+		return false
+	if not is_dead:
+		return false
+	var target_peer_id := _peer_id_from_player_name()
+	var initiator_peer_id := int(command.get("initiator_peer_id", 0))
+	if target_peer_id <= 0 or initiator_peer_id == target_peer_id:
+		return false
+	is_dead = false
+	NetworkManager.revive_player_peer(target_peer_id, String(get_path()))
+	return true
+
+
+func show_hint() -> void:
+	if not is_dead:
+		return
+	var label := get_node_or_null("Head/HeadMesh/Label3D") as Label3D
+	if label == null:
+		return
+	label.text = "E - воскресить"
+	label.modulate = Color(1, 1, 1, 1)
+	label.outline_modulate = Color(0, 0, 0, 1)
+
+
+func hide_hint() -> void:
+	var label := get_node_or_null("Head/HeadMesh/Label3D") as Label3D
+	if label == null or label.text != "E - воскресить":
+		return
+	label.modulate = Color(1, 1, 1, 0)
+	label.outline_modulate = Color(0, 0, 0, 0)
+
+
+func _is_debug_death_event(event: InputEvent) -> bool:
+	if not (event is InputEventKey):
+		return false
+	var key_event := event as InputEventKey
+	return (
+		key_event.pressed
+		and not key_event.echo
+		and (key_event.physical_keycode == DEBUG_DEATH_KEY or key_event.keycode == DEBUG_DEATH_KEY)
+	)
+
+
+func _process_dead_look_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if eva_mode:
+			rotate_object_local(Vector3.UP, -event.relative.x * mouse_sensitivity)
+			var y_delta: float = event.relative.y if invert_mouse_y else -event.relative.y
+			rotate_object_local(Vector3.RIGHT, y_delta * mouse_sensitivity)
+		else:
+			rotate_y(-event.relative.x * mouse_sensitivity)
+			var y_delta2: float = event.relative.y if invert_mouse_y else -event.relative.y
+			head.rotate_x(y_delta2 * mouse_sensitivity)
+			head.rotation.x = clamp(head.rotation.x, -PI / 2, PI / 2)
+
+
+func _die() -> void:
+	if is_dead:
+		return
+	is_dead = true
+	modal_ui_block = false
+	_close_player_ui_for_death()
+	_hide_hover_hint()
+	_show_death_overlay(_is_single_player_match())
+
+
+func apply_revive_from_server() -> void:
+	_revive()
+
+
+func _revive() -> void:
+	if not is_dead and (_death_overlay == null or not is_instance_valid(_death_overlay)):
+		return
+	is_dead = false
+	modal_ui_block = false
+	inventory_open = false
+	menu_open = false
+	_hide_hover_hint()
+	if _death_overlay != null and is_instance_valid(_death_overlay):
+		_death_overlay.queue_free()
+	_death_overlay = null
+	var hotbar := get_node_or_null("UILayer/HotbarUI") as CanvasItem
+	if hotbar:
+		hotbar.visible = true
+	if is_multiplayer_authority():
+		var body_mesh := get_node_or_null("BodyMesh") as Node3D
+		if body_mesh:
+			body_mesh.visible = false
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+
+func _peer_id_from_player_name() -> int:
+	return name.trim_prefix("Player_").to_int()
+
+
+func _close_player_ui_for_death() -> void:
+	inventory_open = false
+	menu_open = false
+	var settings_menu := get_node_or_null("MenuLayer/SettingsMenu")
+	if settings_menu and settings_menu.has_method("hide_menu"):
+		settings_menu.hide_menu()
+	var hotbar := get_node_or_null("UILayer/HotbarUI") as CanvasItem
+	if hotbar:
+		hotbar.visible = false
+
+
+func _is_single_player_match() -> bool:
+	if not NetworkManager.is_session_active():
+		return true
+	if not multiplayer.has_multiplayer_peer():
+		return true
+	return multiplayer.get_peers().is_empty()
+
+
+func _show_death_overlay(can_exit_to_menu: bool) -> void:
+	var ui_layer := get_node_or_null("UILayer") as CanvasLayer
+	if ui_layer == null:
+		return
+	if _death_overlay != null and is_instance_valid(_death_overlay):
+		_death_overlay.queue_free()
+
+	_death_overlay = Control.new()
+	_death_overlay.name = "DeathOverlay"
+	_death_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_death_overlay.mouse_filter = Control.MOUSE_FILTER_STOP if can_exit_to_menu else Control.MOUSE_FILTER_IGNORE
+
+	var shade := ColorRect.new()
+	shade.name = "Shade"
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var shade_alpha := 0.78 if can_exit_to_menu else 0.42
+	shade.color = Color(0.02, 0.0, 0.0, shade_alpha)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_death_overlay.add_child(shade)
+
+	var panel := PanelContainer.new()
+	panel.name = "DeathPanel"
+	var panel_height := 180.0 if can_exit_to_menu else 96.0
+	panel.custom_minimum_size = Vector2(420.0, panel_height)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -210.0
+	panel.offset_right = 210.0
+	panel.offset_top = -panel_height * 0.5
+	panel.offset_bottom = panel_height * 0.5
+	_death_overlay.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 16)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "Ты умер"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 36 if can_exit_to_menu else 28)
+	title.add_theme_color_override("font_color", Color(1.0, 0.28, 0.24))
+	content.add_child(title)
+
+	if can_exit_to_menu:
+		var hint := Label.new()
+		hint.text = "Тело осталось в мире без управления"
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.add_theme_font_size_override("font_size", 14)
+		hint.add_theme_color_override("font_color", Color(0.86, 0.86, 0.86))
+		content.add_child(hint)
+
+		var button := Button.new()
+		button.text = "В главное меню"
+		button.custom_minimum_size = Vector2(220.0, 42.0)
+		button.pressed.connect(_on_death_main_menu_pressed)
+		content.add_child(button)
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+	ui_layer.add_child(_death_overlay)
+
+
+func _on_death_main_menu_pressed() -> void:
+	if NetworkManager.is_session_active():
+		NetworkManager.leave()
+	get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
 func toggle_inventory() -> void:

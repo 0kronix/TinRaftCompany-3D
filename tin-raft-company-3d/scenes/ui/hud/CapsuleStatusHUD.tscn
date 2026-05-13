@@ -12,24 +12,20 @@ script = ExtResource("1_0")
 
 [node name="Title" type="Label" parent="."]
 layout_mode = 2
-text = "Капсула"
+text = "Игрок"
+
+[node name="HealthValue" type="Label" parent="."]
+layout_mode = 2
+text = "Здоровье: 100.0%"
 
 [node name="OxygenValue" type="Label" parent="."]
 layout_mode = 2
-text = "O2: 100.0%"
+text = "O2 игрока: 100.0%"
+
+[node name="OxygenReserveValue" type="Label" parent="."]
+layout_mode = 2
+text = "O2 запас: 100.0%"
 
 [node name="PressureValue" type="Label" parent="."]
 layout_mode = 2
-text = "P: 100.0%"
-
-[node name="TemperatureValue" type="Label" parent="."]
-layout_mode = 2
-text = "T: 21.0C"
-
-[node name="PowerValue" type="Label" parent="."]
-layout_mode = 2
-text = "E: 100.0%"
-
-[node name="StatusValue" type="Label" parent="."]
-layout_mode = 2
-text = "Состояние: НОРМА"
+text = "Давление: 100.0%"

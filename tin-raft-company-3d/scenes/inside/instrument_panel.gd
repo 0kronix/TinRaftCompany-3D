@@ -16,6 +16,7 @@ func _on_state_changed(snapshot: Dictionary) -> void:
 
 func _update_display(snapshot: Dictionary) -> void:
 	var o2   := snapshot.get("oxygen",      100.0) as float
+	var o2_reserve := float(snapshot.get("ship_oxygen_reserve_percent", 100.0))
 	var pr   := snapshot.get("pressure",    100.0) as float
 	var temp := snapshot.get("temperature",  22.0) as float
 	var pw   := snapshot.get("power",       100.0) as float
@@ -25,12 +26,13 @@ func _update_display(snapshot: Dictionary) -> void:
 	status_label.text = (
 		"== CAPSULE STATUS ==\n"
 		+ "O2  %s %3.0f%%\n" % [_bar(o2), o2]
+		+ "O2R %s %3.0f%%\n" % [_bar(o2_reserve), o2_reserve]
 		+ "P   %s %3.0f%%\n" % [_bar(pr), pr]
 		+ "T   %s %3.0fC\n"  % [_bar_temp(temp), temp]
 		+ "PWR %s %3.0f%%"   % [_bar(pw), pw]
 	)
 
-	var critical := o2 < 30.0 or pr < 30.0 or pw < 15.0
+	var critical := o2 < 30.0 or o2_reserve < 20.0 or pr < 30.0 or pw < 15.0
 	status_label.modulate = Color(1.0, 0.35, 0.3) if critical else Color(0.35, 1.0, 0.55)
 
 	alert_label.text     = "! HULL BREACH !" if breach else ""
