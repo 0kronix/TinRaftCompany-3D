@@ -2,29 +2,48 @@ extends CharacterBody3D
 
 signal vitals_changed(snapshot: Dictionary)
 
+# --- ОБЩЕЕ ---
 const JUMP_VELOCITY = 4.5
 const DEFAULT_MOUSE_SENSITIVITY := 0.003
 const LOBBY_SCENE := "res://scenes/network/lobby.tscn"
+
+# --- СМЕРТЬ И ВОСКРЕШЕНИЕ ---
 const DEAD_BODY_PUSH_RADIUS := 0.95
 const DEAD_BODY_PUSH_ACCEL := 7.5
 const REVIVE_COMMAND_TYPE := "revive_player"
+
+# --- ОБЩИЕ ПАРАМЕТРЫ ПОКАЗАТЕЛЕЙ ИГРОКА ---
 const VITAL_MIN_VALUE := 0.0
 const VITAL_DEFAULT_MAX := 100.0
+
+# --- КИСЛОРОД ---
 const PLAYER_OXYGEN_CONSUMPTION_PER_SECOND := 0.1
 const PLAYER_OXYGEN_RESTORE_PER_SECOND := 0.1
-const PLAYER_PRESSURE_LOSS_PER_SECOND := 1
-const PLAYER_PRESSURE_RESTORE_PER_SECOND := 1
 const SUFFOCATION_DAMAGE_MIN := 9.0
 const SUFFOCATION_DAMAGE_MAX := 11.0
 const SUFFOCATION_DAMAGE_INTERVAL_MIN := 1.0
 const SUFFOCATION_DAMAGE_INTERVAL_MAX := 2.0
+const SHIP_OXYGEN_REFILL_REQUEST_INTERVAL := 0.25
+const LOW_OXYGEN_WARNING_PERCENT := 20.0
+
+# --- ДАВЛЕНИЕ КОСТЮМА ---
+const PLAYER_PRESSURE_LOSS_PER_SECOND := 1
+const PLAYER_PRESSURE_RESTORE_PER_SECOND := 1
 const PRESSURE_DAMAGE_MIN := 15.0
 const PRESSURE_DAMAGE_MAX := 25.0
 const PRESSURE_DAMAGE_INTERVAL_MIN := 0.5
 const PRESSURE_DAMAGE_INTERVAL_MAX := 1.0
-const SHIP_OXYGEN_REFILL_REQUEST_INTERVAL := 0.25
-const LOW_OXYGEN_WARNING_PERCENT := 20.0
 const LOW_PRESSURE_WARNING_PERCENT := 20.0
+
+# --- ТЕМПЕРАТУРА ТЕЛА ---
+const PLAYER_BODY_TEMPERATURE_DEFAULT := 36.6
+const PLAYER_TEMPERATURE_MIN := 0.0
+const PLAYER_TEMPERATURE_MAX := 60.0
+const LOW_TEMPERATURE_WARNING_C := 32.0
+const LOW_TEMPERATURE_FULL_EFFECT_C := 28.0
+const HIGH_TEMPERATURE_WARNING_C := 44.0
+const HIGH_TEMPERATURE_FULL_EFFECT_C := 48.0
+const TEMPERATURE_DAMAGE_PER_SECOND := 0.75
 
 ## Open-space EVA: 6DOF — включается телепортом с шлюза (NetworkManager) или в space_eva.
 @export var eva_mode: bool = false
@@ -55,6 +74,7 @@ func _setup_sync() -> void:
 	config.add_property(NodePath(".:current_health"))
 	config.add_property(NodePath(".:current_oxygen"))
 	config.add_property(NodePath(".:current_pressure"))
+	config.add_property(NodePath(".:current_temperature"))
 	config.add_property(NodePath(".:eva_mode"))
 	config.add_property(NodePath(".:eva_jetpack_thrust_strength"))
 	config.add_property(NodePath(".:eva_jetpack_thrust_dir"))
@@ -120,6 +140,10 @@ var current_pressure: float = VITAL_DEFAULT_MAX:
 	set(value):
 		current_pressure = clampf(value, VITAL_MIN_VALUE, max_pressure)
 		_on_current_pressure_changed()
+var current_temperature: float = PLAYER_BODY_TEMPERATURE_DEFAULT:
+	set(value):
+		current_temperature = clampf(value, PLAYER_TEMPERATURE_MIN, PLAYER_TEMPERATURE_MAX)
+		_on_current_temperature_changed()
 @export_group("")
 var _ship_oxygen_breath_pending: float = 0.0
 var _ship_oxygen_refill_pending: float = 0.0
@@ -312,6 +336,7 @@ func _physics_process(delta: float) -> void:
 			_update_player_pressure(delta)
 			_update_suffocation_damage(delta)
 			_update_pressure_damage(delta)
+			_update_temperature_damage(delta)
 	if not is_multiplayer_authority():
 		return
 	if is_dead:
@@ -564,20 +589,23 @@ func get_vitals_snapshot() -> Dictionary:
 		"oxygen": current_oxygen,
 		"max_oxygen": max_oxygen,
 		"pressure": current_pressure,
-		"max_pressure": max_pressure
+		"max_pressure": max_pressure,
+		"temperature": current_temperature
 	}
 
 
-func set_player_vitals(health: float, oxygen: float, pressure: float) -> void:
+func set_player_vitals(health: float, oxygen: float, pressure: float, temperature: float = PLAYER_BODY_TEMPERATURE_DEFAULT) -> void:
 	current_health = health
 	current_oxygen = oxygen
 	current_pressure = pressure
+	current_temperature = temperature
 
 
-func change_player_vitals(health_delta: float, oxygen_delta: float, pressure_delta: float) -> void:
+func change_player_vitals(health_delta: float, oxygen_delta: float, pressure_delta: float, temperature_delta: float = 0.0) -> void:
 	change_health(health_delta)
 	change_oxygen(oxygen_delta)
 	change_pressure(pressure_delta)
+	change_temperature(temperature_delta)
 
 
 func change_health(amount: float) -> void:
@@ -592,10 +620,19 @@ func change_pressure(amount: float) -> void:
 	current_pressure += amount
 
 
+func change_temperature(amount: float) -> void:
+	current_temperature += amount
+
+
+func set_player_temperature(temperature: float) -> void:
+	current_temperature = temperature
+
+
 func reset_player_vitals() -> void:
 	current_health = max_health
 	current_oxygen = max_oxygen
 	current_pressure = max_pressure
+	current_temperature = PLAYER_BODY_TEMPERATURE_DEFAULT
 
 
 func _on_current_health_changed() -> void:
@@ -614,6 +651,11 @@ func _on_current_pressure_changed() -> void:
 	_update_pressure_warning_effect()
 
 
+func _on_current_temperature_changed() -> void:
+	_emit_vitals_changed()
+	_update_temperature_warning_effect()
+
+
 func _setup_oxygen_warning_effect() -> void:
 	var shader_rect := get_node_or_null("ShaiderLayer/ColorRect") as ColorRect
 	if shader_rect == null:
@@ -625,6 +667,7 @@ func _setup_oxygen_warning_effect() -> void:
 	shader_rect.material = _oxygen_warning_material
 	_update_oxygen_warning_effect()
 	_update_pressure_warning_effect()
+	_update_temperature_warning_effect()
 
 
 func _update_oxygen_warning_effect() -> void:
@@ -649,6 +692,27 @@ func _update_pressure_warning_effect() -> void:
 	if pressure_percent < LOW_PRESSURE_WARNING_PERCENT:
 		warning_strength = clampf((LOW_PRESSURE_WARNING_PERCENT - pressure_percent) / LOW_PRESSURE_WARNING_PERCENT, 0.0, 1.0)
 	_oxygen_warning_material.set_shader_parameter("pressure_vignette_strength", warning_strength)
+
+
+func _update_temperature_warning_effect() -> void:
+	if _oxygen_warning_material == null:
+		return
+	var cold_strength := 0.0
+	var heat_strength := 0.0
+	if current_temperature < LOW_TEMPERATURE_WARNING_C:
+		cold_strength = clampf(
+			(LOW_TEMPERATURE_WARNING_C - current_temperature) / (LOW_TEMPERATURE_WARNING_C - LOW_TEMPERATURE_FULL_EFFECT_C),
+			0.0,
+			1.0
+		)
+	elif current_temperature > HIGH_TEMPERATURE_WARNING_C:
+		heat_strength = clampf(
+			(current_temperature - HIGH_TEMPERATURE_WARNING_C) / (HIGH_TEMPERATURE_FULL_EFFECT_C - HIGH_TEMPERATURE_WARNING_C),
+			0.0,
+			1.0
+		)
+	_oxygen_warning_material.set_shader_parameter("cold_tint_strength", cold_strength)
+	_oxygen_warning_material.set_shader_parameter("heat_tint_strength", heat_strength)
 
 
 func _update_suffocation_damage(delta: float) -> void:
@@ -683,6 +747,12 @@ func _update_pressure_damage(delta: float) -> void:
 
 func _next_pressure_damage_interval() -> float:
 	return randf_range(PRESSURE_DAMAGE_INTERVAL_MIN, PRESSURE_DAMAGE_INTERVAL_MAX)
+
+
+func _update_temperature_damage(delta: float) -> void:
+	if current_temperature >= LOW_TEMPERATURE_WARNING_C and current_temperature <= HIGH_TEMPERATURE_WARNING_C:
+		return
+	change_health(-TEMPERATURE_DAMAGE_PER_SECOND * delta)
 
 
 func apply_oxygen_exchange_from_ship(breath_amount: float, granted_amount: float) -> void:

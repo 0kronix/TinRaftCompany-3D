@@ -4,6 +4,7 @@ extends VBoxContainer
 @onready var oxygen_value: Label = $OxygenValue
 @onready var oxygen_reserve_value: Label = $OxygenReserveValue
 @onready var pressure_value: Label = $PressureValue
+@onready var temperature_value: Label = $TemperatureValue
 
 var _capsule_state_service: Node = null
 var _local_player: Node = null
@@ -41,8 +42,10 @@ func _update_player_vitals() -> void:
 		health_value.text = "Здоровье: --"
 		oxygen_value.text = "O2 игрока: --"
 		pressure_value.text = "Давление: --"
+		temperature_value.text = "Температура: --"
 		return
 	var snapshot: Dictionary = _local_player.get_vitals_snapshot()
 	health_value.text = "Здоровье: %.1f%%" % float(snapshot.get("health", 0.0))
 	oxygen_value.text = "O2 игрока: %.1f%%" % float(snapshot.get("oxygen", 0.0))
 	pressure_value.text = "Давление: %.1f%%" % float(snapshot.get("pressure", 0.0))
+	temperature_value.text = "Температура: %.1f C" % float(snapshot.get("temperature", 36.6))

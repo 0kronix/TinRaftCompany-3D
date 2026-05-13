@@ -12,6 +12,10 @@ uniform float red_vignette_strength : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 red_vignette_color : source_color = vec3(1.0, 0.02, 0.0);
 uniform float pressure_vignette_strength : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 pressure_vignette_color : source_color = vec3(0.55, 0.78, 1.0);
+uniform float heat_tint_strength : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 heat_tint_color : source_color = vec3(1.0, 0.42, 0.08);
+uniform float cold_tint_strength : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 cold_tint_color : source_color = vec3(0.2, 0.55, 1.0);
 
 // Параметр искривления экрана
 uniform float barrel_distortion : hint_range(0.0, 0.5) = 0.05;
@@ -74,6 +78,10 @@ void fragment() {
     float red_edge = smoothstep(0.18, 1.28, dot(vigUV, vigUV));
     float red_pulse = 0.78 + sin(TIME * 4.0) * 0.22;
     float pressure_pulse = 0.72 + sin(TIME * 2.6) * 0.28;
+    float temperature_overlay = 0.32 + red_edge * 0.68;
+    float temperature_pulse = 0.88 + sin(TIME * 1.8) * 0.12;
+    color = mix(color, cold_tint_color, cold_tint_strength * temperature_overlay * temperature_pulse);
+    color = mix(color, heat_tint_color, heat_tint_strength * temperature_overlay * temperature_pulse);
     color = mix(color, pressure_vignette_color, pressure_vignette_strength * red_edge * pressure_pulse);
     color = mix(color, red_vignette_color, red_vignette_strength * red_edge * red_pulse);
     

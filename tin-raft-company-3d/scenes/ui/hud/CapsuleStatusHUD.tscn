@@ -6,7 +6,7 @@
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 260.0
-offset_bottom = 140.0
+offset_bottom = 160.0
 theme_override_constants/separation = 2
 script = ExtResource("1_0")
 
@@ -29,3 +29,7 @@ text = "O2 запас: 100.0%"
 [node name="PressureValue" type="Label" parent="."]
 layout_mode = 2
 text = "Давление: 100.0%"
+
+[node name="TemperatureValue" type="Label" parent="."]
+layout_mode = 2
+text = "Температура: 36.6 C"
