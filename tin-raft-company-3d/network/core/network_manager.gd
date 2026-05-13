@@ -425,6 +425,24 @@ func submit_shuttle_pilot_input(path_str: String, bits: int) -> void:
 	_rpc_shuttle_pilot_input.rpc_id(1, path_str, bits)
 
 
+## ~20 Гц: биты тяги для SFX у клиентов (поза шаттла уже идёт отдельно).
+func broadcast_shuttle_thruster_bits(path_str: String, bits: int) -> void:
+	if not MultiplayerRuntime.has_active_session_for(self):
+		return
+	if not multiplayer.is_server():
+		return
+	_rpc_shuttle_thruster_bits.rpc(path_str, bits & 127)
+
+
+@rpc("authority", "unreliable_ordered")
+func _rpc_shuttle_thruster_bits(path_str: String, bits: int) -> void:
+	if multiplayer.is_server():
+		return
+	var n: Node = MultiplayerNodeResolver.resolve(get_tree(), path_str)
+	if n != null and n.has_method("apply_replicated_thruster_bits"):
+		n.apply_replicated_thruster_bits(bits)
+
+
 @rpc("any_peer", "unreliable")
 func _rpc_shuttle_pilot_input(path_str: String, bits: int) -> void:
 	if not multiplayer.is_server():

@@ -21,6 +21,8 @@ var _collision_r: float = 0.055
 var _collision_mask: int = 1025
 var _constraint_passes: int = 12
 var _collision_resolve_steps: int = 6
+## 0..1: перетяжка по прямой якорь–разъём (для SFX «на пределе»).
+var _strain_audio: float = 0.0
 
 var _sphere: SphereShape3D
 var _shape_q: PhysicsShapeQueryParameters3D
@@ -58,6 +60,7 @@ func configure(
 	_length_max = maxf(_length_min + 0.1, hi)
 	_slack_ratio = clampf(slack_ratio, 0.0, 0.48)
 	_payed_length = clampf(initial_payed_length, _length_min, _length_max)
+	_strain_audio = 0.0
 	_rest = maxf(0.04, _payed_length / float(_seg))
 	_compliance = clampf(1.0 - slack_ratio * 0.85, 0.08, 1.0)
 	_verlet_damping = clampf(1.0 - _damping * 0.0012, 0.88, 0.9995)
@@ -79,6 +82,10 @@ func set_payed_length(value: float) -> bool:
 
 func get_payed_length() -> float:
 	return _payed_length
+
+
+func get_tether_strain_for_audio() -> float:
+	return _strain_audio
 
 
 func reset_straight(anchor: Vector3, attach: Vector3) -> void:
@@ -112,6 +119,7 @@ func step(
 	if _seg < MIN_SEGMENTS or character == null or space == null:
 		return
 	var dt: float = clampf(delta, 0.0, 0.05)
+	_strain_audio = move_toward(_strain_audio, 0.0, dt * 1.5)
 
 	_pos[0] = anchor_global
 	_old[0] = anchor_global
@@ -147,7 +155,9 @@ func _clamp_straight_span_to_payed(anchor_global: Vector3, character: CharacterB
 	if d <= _payed_length + 0.015:
 		return
 	var dir: Vector3 = (attach_g - anchor_global) / maxf(d, 1e-6)
-	character.global_position -= dir * (d - _payed_length)
+	var over: float = d - _payed_length
+	_strain_audio = minf(1.0, maxf(_strain_audio, clampf(over / 0.22, 0.0, 1.0)))
+	character.global_position -= dir * over
 	var vn: float = character.velocity.dot(dir)
 	if vn > 0.0:
 		character.velocity -= dir * vn
@@ -240,6 +250,9 @@ func _apply_body_tether_residual(
 	if ramp_end <= slack_end + 1e-3:
 		ramp_end = slack_end + _payed_length * 0.06
 	var tension: float = _smoothstep01(straight, slack_end, ramp_end)
+	if tension > 0.0005:
+		var audio_boost: float = sqrt(tension)
+		_strain_audio = minf(1.0, maxf(_strain_audio, audio_boost))
 	if tension < 0.02:
 		return
 

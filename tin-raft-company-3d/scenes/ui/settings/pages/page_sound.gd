@@ -14,6 +14,8 @@ func _build() -> void:
 	_add_row(_t("Общая громкость", "Master volume"), "", "vol_master", SettingRow.RowType.SLIDER)
 	_add_row(_t("Музыка", "Music"), _t("Ambient / саундтрек", "Ambient / soundtrack"), "vol_music", SettingRow.RowType.SLIDER)
 	_add_row(_t("Эффекты", "SFX"), _t("Системы и механика", "Systems and mechanics"), "vol_sfx", SettingRow.RowType.SLIDER)
+	_add_row(_t("EVA: джетпак", "EVA: jetpack"), _t("Космос, реактивная тяга", "Space, jet thrust"), "vol_eva_jetpack", SettingRow.RowType.SLIDER)
+	_add_row(_t("Шаттл: двигатели", "Shuttle: engines"), _t("Основной и манёвровые в космосе", "Main and RCS in space"), "vol_shuttle_engines", SettingRow.RowType.SLIDER)
 
 	# ── Голосовой чат ──────────────────────────────────────────
 	_add_section(_t("Голосовой чат", "Voice chat"))

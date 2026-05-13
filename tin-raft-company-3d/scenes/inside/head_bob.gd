@@ -174,12 +174,12 @@ func _process_jetpack_bob(delta: float, body: CharacterBody3D) -> void:
 			_eva_dir_head_smooth = Vector3.ZERO
 		return
 
-	# Направление: в мире — по velocity, если движемся, иначе по вектору тяги
+	# Направление: при нажатых кнопках тяги — всегда вектор ввода в мире; иначе — по скорости (инерция без ввода).
 	var d_world: Vector3 = Vector3.ZERO
-	if speed > jetpack_move_speed_threshold:
-		d_world = v / speed
-	elif tdir.length_squared() > 0.0001:
+	if tdir.length_squared() > 0.0001:
 		d_world = body.global_transform.basis * tdir.normalized()
+	elif speed > jetpack_move_speed_threshold:
+		d_world = v / speed
 	elif speed > 0.04:
 		d_world = v / speed
 	if d_world.length_squared() < 1e-8:

@@ -14,6 +14,8 @@ var data := {
 	"vol_master":    80.0,
 	"vol_music":     60.0,
 	"vol_sfx":       90.0,
+	"vol_eva_jetpack":    85.0,
+	"vol_shuttle_engines": 85.0,
 	"vol_radio":     75.0,
 	"vol_static":    40.0,
 	"alarm_enabled": true,
@@ -114,6 +116,8 @@ func _apply_audio() -> void:
 	_apply_bus_volume_if_exists("Master", data["vol_master"] / 100.0)
 	_apply_bus_volume_if_exists("Music", data["vol_music"] / 100.0)
 	_apply_bus_volume_if_exists("SFX", data["vol_sfx"] / 100.0)
+	_apply_bus_volume_if_exists("EVA_Jetpack", data["vol_eva_jetpack"] / 100.0)
+	_apply_bus_volume_if_exists("ShuttleEngines", data["vol_shuttle_engines"] / 100.0)
 	_apply_bus_volume_if_exists("Radio", data["vol_radio"] / 100.0)
 	_apply_bus_volume_if_exists("Static", data["vol_static"] / 100.0)
 

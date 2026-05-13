@@ -29,6 +29,8 @@ func _setup_sync() -> void:
 	config.add_property(NodePath(".:position"))
 	config.add_property(NodePath(".:rotation"))
 	config.add_property(NodePath(".:eva_mode"))
+	config.add_property(NodePath(".:eva_jetpack_thrust_strength"))
+	config.add_property(NodePath(".:eva_jetpack_thrust_dir"))
 	config.add_property(NodePath(".:eva_shuttle_tether_attached"))
 	config.add_property(NodePath(".:eva_shuttle_tether_module_path"))
 	config.add_property(NodePath(".:tether_rope_visual_radius"))
@@ -42,6 +44,8 @@ func _setup_sync() -> void:
 var SPEED        = 4.5
 var acceleration = 12.0
 var friction     = 10.0
+## Интерьер: накопление для шагов (только authority).
+var _footstep_phase: float = 0.0
 
 # --- ПРЫЖОК И ФИЗИКА ---
 var jump_force      = 4.8
@@ -83,6 +87,10 @@ const TETHER_INTERIOR_LAYER: int = 11
 ## Упирание в обшивку остаётся за счёт Verlet (`rope_collision_mask` включает слой 1).
 const TETHER_ROPE_COLLISION_LAYERS: int = (1 << (TETHER_INTERIOR_LAYER - 1)) | (1 << (TETHER_PLAYER_COLLISION_LAYER - 1))
 const TETHER_COLLISION_SEG_POOL := 36
+## Скорость схождения фактической длины троса к целевой (м/с).
+const TETHER_PAYED_CATCHUP_MPS := 3.6
+## Скорость изменения целевой длины при удержании клавиши (м/с).
+const TETHER_DESIRED_REEL_MPS := 1.25
 var eva_shuttle_tether_attached: bool = false
 var eva_shuttle_tether_module_path: String = ""
 ## Радиус троса для отрисовки у других игроков (синхронизатор копирует с владельца).
@@ -92,6 +100,10 @@ var _tether_length_min: float = 5.0
 var _tether_length_max: float = 34.0
 var _tether_length_step: float = 0.75
 var _tether_payed_length: float = 5.0
+## Целевая выпущенная длина (кнопки); фактическая длина в симе догоняет плавно.
+var _tether_payed_length_desired: float = 5.0
+var _tether_reel_tick_cd: float = 0.0
+var _tether_limit_ping_cd: float = 0.0
 var _tether_slack_ratio: float = 0.14
 var _tether_spring: float = 90.0
 var _tether_damping: float = 7.0
@@ -284,6 +296,7 @@ func _physics_process_interior(delta: float) -> void:
 
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_force
+		SoundManager.play_interior_at(self, "jump_interior", -1.0)
 
 	if not is_on_floor():
 		velocity.y -= gravity * (fall_multiplier if velocity.y < 0 else 1.0) * delta
@@ -297,7 +310,21 @@ func _physics_process_interior(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, friction * delta)
 
 	move_and_slide()
+	_update_interior_footsteps(delta, input_dir)
 	_update_hover()
+
+
+func _update_interior_footsteps(delta: float, input_dir: Vector2) -> void:
+	var horiz: float = Vector2(velocity.x, velocity.z).length()
+	var wish_move: bool = input_dir.length_squared() > 0.01
+	if not is_on_floor() or not wish_move or horiz < 0.25:
+		_footstep_phase = 0.0
+		return
+	_footstep_phase += delta
+	var cadence: float = lerpf(0.48, 0.32, clampf(horiz / SPEED, 0.0, 1.0))
+	if _footstep_phase >= cadence:
+		_footstep_phase = 0.0
+		SoundManager.play_interior_at(self, "footstep_interior", -4.0)
 
 
 func _physics_process_eva(delta: float) -> void:
@@ -325,16 +352,11 @@ func _physics_process_eva(delta: float) -> void:
 		if speed > EVA_SPEED_CAP:
 			velocity = velocity * (EVA_SPEED_CAP / speed)
 
-	if eva_shuttle_tether_attached and _rope_sim != null:
-		if Input.is_action_just_pressed("tether_length_increase"):
-			_adjust_tether_payed_length(_tether_length_step)
-		if Input.is_action_just_pressed("tether_length_decrease"):
-			_adjust_tether_payed_length(-_tether_length_step)
-
 	if eva_shuttle_tether_attached:
 		if _tether_anchor == null or not is_instance_valid(_tether_anchor) or _rope_sim == null:
 			shuttle_tether_detach()
 		else:
+			_update_tether_payed_smooth_and_audio(delta)
 			var w3d: World3D = get_world_3d()
 			if w3d != null:
 				_rope_sim.step(
@@ -351,12 +373,18 @@ func _physics_process_eva(delta: float) -> void:
 
 	if eva_shuttle_tether_attached and _rope_sim != null and _tether_anchor != null and is_instance_valid(_tether_anchor):
 		_rope_sim.clamp_character_straight_line(_tether_anchor.global_position, self)
+		SoundManager.set_tether_stress_loop(self, _rope_sim.get_tether_strain_for_audio())
 
 	_update_shuttle_tether_visual()
 	_update_hover()
 
 
 func _process(_delta: float) -> void:
+	if is_instance_valid(head):
+		if eva_mode:
+			SoundManager.set_eva_jetpack_loop(self, eva_jetpack_thrust_strength, eva_jetpack_thrust_dir)
+		else:
+			SoundManager.set_eva_jetpack_loop(self, 0.0, Vector3.ZERO)
 	if is_multiplayer_authority():
 		return
 	if not eva_mode:
@@ -396,8 +424,17 @@ func _try_interact() -> void:
 		return
 	if obj.has_method("build_interaction_command"):
 		var command: Dictionary = obj.build_interaction_command()
-		NetworkManager.request_command(self, command)
+		var ctype: String = str(command.get("type", ""))
+		if ctype != "pickup_world_item":
+			SoundManager.play_interior_at(self, "interact_use", -2.0)
+		if NetworkManager.is_session_active() and not multiplayer.is_server():
+			NetworkManager.request_command(self, command)
+		else:
+			var ok: bool = NetworkManager.request_command(self, command)
+			if ctype == "pickup_world_item" and ok:
+				SoundManager.play_interior_at(self, "item_pickup", -1.0)
 	else:
+		SoundManager.play_interior_at(self, "interact_use", -2.0)
 		# Fallback for objects without the command pattern.
 		obj.interact(self)
 
@@ -595,6 +632,9 @@ func toggle_shuttle_tether_at_module(module: Node) -> void:
 
 func shuttle_tether_detach() -> void:
 	var was_attached: bool = eva_shuttle_tether_attached
+	SoundManager.set_tether_stress_loop(self, 0.0)
+	_tether_reel_tick_cd = 0.0
+	_tether_limit_ping_cd = 0.0
 	eva_shuttle_tether_attached = false
 	eva_shuttle_tether_module_path = ""
 	_tether_anchor = null
@@ -681,6 +721,9 @@ func shuttle_tether_attach(module: Node) -> void:
 		snappedf(_tether_length_max, 0.1),
 		"); X — длиннее, Z — короче"
 	)
+	_tether_payed_length_desired = _tether_payed_length
+	_tether_reel_tick_cd = 0.0
+	_tether_limit_ping_cd = 0.0
 	_tether_anchor = anchor
 	eva_shuttle_tether_attached = true
 	eva_shuttle_tether_module_path = str(module.get_path())
@@ -690,16 +733,42 @@ func shuttle_tether_attach(module: Node) -> void:
 		_ensure_tether_rope_collision_holder()
 
 
-func _adjust_tether_payed_length(delta_len: float) -> void:
+func _update_tether_payed_smooth_and_audio(delta: float) -> void:
 	if _rope_sim == null:
 		return
-	var target: float = clampf(_tether_payed_length + delta_len, _tether_length_min, _tether_length_max)
-	if absf(target - _tether_payed_length) < 1e-5:
-		return
-	if not _rope_sim.set_payed_length(target):
-		return
+	if Input.is_action_pressed("tether_length_increase"):
+		if Input.is_action_just_pressed("tether_length_increase"):
+			_tether_payed_length_desired = minf(_tether_payed_length_desired + _tether_length_step, _tether_length_max)
+		else:
+			_tether_payed_length_desired = minf(_tether_payed_length_desired + TETHER_DESIRED_REEL_MPS * delta, _tether_length_max)
+	if Input.is_action_pressed("tether_length_decrease"):
+		if Input.is_action_just_pressed("tether_length_decrease"):
+			_tether_payed_length_desired = maxf(_tether_payed_length_desired - _tether_length_step, _tether_length_min)
+		else:
+			_tether_payed_length_desired = maxf(_tether_payed_length_desired - TETHER_DESIRED_REEL_MPS * delta, _tether_length_min)
+	_tether_payed_length_desired = clampf(_tether_payed_length_desired, _tether_length_min, _tether_length_max)
+
+	var cur_p: float = _rope_sim.get_payed_length()
+	var new_p: float = move_toward(cur_p, _tether_payed_length_desired, TETHER_PAYED_CATCHUP_MPS * delta)
+	var delta_p: float = new_p - cur_p
+	_tether_reel_tick_cd -= delta
+	if absf(delta_p) > 0.004 and _tether_reel_tick_cd <= 0.0:
+		_tether_reel_tick_cd = clampf(0.28 - absf(delta_p) * 3.2, 0.1, 0.34)
+		var vol: float = lerpf(-13.0, -5.0, clampf(absf(delta_p) / maxf(delta * TETHER_PAYED_CATCHUP_MPS, 1e-4), 0.0, 1.0))
+		SoundManager.play_tether_reel_tick(self, delta_p > 0.0, vol)
+	if absf(new_p - cur_p) > 1e-6:
+		_rope_sim.set_payed_length(new_p)
 	_tether_payed_length = _rope_sim.get_payed_length()
-	print("[Tether] выпущенная длина: ", snappedf(_tether_payed_length, 0.01), " м")
+
+	_tether_limit_ping_cd -= delta
+	if Input.is_action_pressed("tether_length_increase") and _tether_payed_length_desired >= _tether_length_max - 0.02 and _tether_payed_length >= _tether_length_max - 0.06:
+		if _tether_limit_ping_cd <= 0.0:
+			_tether_limit_ping_cd = 0.34
+			SoundManager.play_interior_at(self, "tether_limit_ping", -9.0)
+	if Input.is_action_pressed("tether_length_decrease") and _tether_payed_length_desired <= _tether_length_min + 0.02 and _tether_payed_length <= _tether_length_min + 0.06:
+		if _tether_limit_ping_cd <= 0.0:
+			_tether_limit_ping_cd = 0.34
+			SoundManager.play_interior_at(self, "tether_limit_ping", -11.0)
 
 
 func apply_shuttle_tether_rope_visual(points_world: PackedVector3Array) -> void:

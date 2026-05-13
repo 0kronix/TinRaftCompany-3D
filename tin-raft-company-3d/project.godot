@@ -24,6 +24,7 @@ driver/mix_rate=48000
 
 UIManager="*res://autoload/ui_manager.gd"
 SettingsManager="*uid://bp1qg1u8t8iqu"
+SoundManager="*res://autoload/sound_manager.gd"
 GameServices="*res://autoload/game_services.gd"
 NetworkManager="*res://network/core/network_manager.gd"
 FrameSpikeProbe="*res://debug/frame_spike_probe.gd"

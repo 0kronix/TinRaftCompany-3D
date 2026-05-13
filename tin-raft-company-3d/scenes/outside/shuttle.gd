@@ -49,6 +49,9 @@ var _thrusters: Dictionary = {}
 var _pilot_input_bits: int = 0
 ## Обновляется перед интеграцией; силы крутятся только из `_integrate_forces` (Jolt/FPS-стабильно).
 var _thruster_bits: int = 0
+## Снимок с сервера для клиентов (SFX); локальный симулятор пишет в `_thruster_bits`.
+var _replicated_thruster_bits: int = 0
+var _thruster_bits_net_accum: float = 0.0
 
 # ── Основной двигатель ─────────────────────────────────────
 var _main_thruster: Marker3D = null
@@ -111,9 +114,33 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		_active_thrusters[key] = false
 	_main_thruster_active = false
 	_apply_thruster_bits_state(state, _thruster_bits)
+	if MultiplayerRuntime.has_active_session_for(self) and is_multiplayer_authority():
+		_thruster_bits_net_accum += state.step
+		if _thruster_bits_net_accum >= 0.05:
+			_thruster_bits_net_accum = 0.0
+			NetworkManager.broadcast_shuttle_thruster_bits(str(get_path()), _thruster_bits)
 
 
-# ── Основной двигатель: толкает вперёд из центра кормы ─────
+func apply_replicated_thruster_bits(bits: int) -> void:
+	_replicated_thruster_bits = bits & 127
+
+
+func _thruster_bits_for_audio() -> int:
+	if _is_offline() or is_multiplayer_authority():
+		return _thruster_bits
+	return _replicated_thruster_bits
+
+
+func _thruster_bits_to_intensity(bits: int) -> float:
+	var main_f: float = 1.0 if (bits & 1) != 0 else 0.0
+	var rcs_count := 0
+	for b: int in [2, 4, 8, 16, 32, 64]:
+		if (bits & b) != 0:
+			rcs_count += 1
+	var rcs_f: float = clampf(float(rcs_count) / 4.0, 0.0, 1.0) * 0.55
+	return clampf(main_f * 0.92 + rcs_f, 0.0, 1.0)
+
+
 func _fire_main_engine_state(state: PhysicsDirectBodyState3D) -> void:
 	if _main_thruster == null:
 		push_warning("Main_Engine marker not found in Thrusters!")
@@ -192,6 +219,8 @@ func apply_pilot_input_bits(bits: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	var b_audio: int = _thruster_bits_for_audio()
+	SoundManager.set_shuttle_engines_loop(self, _thruster_bits_to_intensity(b_audio))
 	var _wp0: int = Time.get_ticks_usec() if WalkPerfProbe.sections_enabled() else 0
 	# На клиенте кукла шаттла часто freeze (кинематика); ввод всё равно шлём с пира-пилота.
 	if not _is_offline() and not multiplayer.is_server() and pilot_peer_id == multiplayer.get_unique_id():

@@ -125,7 +125,9 @@ static func apply_pickup_grant_local(tree: SceneTree, item_data_path: String, co
 	var inventory := player.get_node_or_null("InventoryComponent")
 	var hotbar := player.get_node_or_null("HotbarComponent")
 	if inventory and hotbar:
-		inventory.add_item(item_data, count, hotbar.active_slot)
+		if inventory.add_item(item_data, count, hotbar.active_slot):
+			if player is Node3D:
+				SoundManager.play_interior_at(player as Node3D, "item_pickup", -1.0)
 
 
 static func show_interactable_ui_client(res_path: String, target_path_str: String) -> void:
