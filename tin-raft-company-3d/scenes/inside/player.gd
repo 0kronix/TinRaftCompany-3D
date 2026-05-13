@@ -5,15 +5,16 @@ signal vitals_changed(snapshot: Dictionary)
 const JUMP_VELOCITY = 4.5
 const DEFAULT_MOUSE_SENSITIVITY := 0.003
 const LOBBY_SCENE := "res://scenes/network/lobby.tscn"
-const DEBUG_DEATH_KEY := KEY_K
 const DEAD_BODY_PUSH_RADIUS := 0.95
 const DEAD_BODY_PUSH_ACCEL := 7.5
 const REVIVE_COMMAND_TYPE := "revive_player"
 const VITAL_MIN_VALUE := 0.0
 const VITAL_DEFAULT_MAX := 100.0
-const PLAYER_OXYGEN_CONSUMPTION_PER_SECOND := 0.125
-const PLAYER_OXYGEN_RESTORE_PER_SECOND := 0.125
+const PLAYER_OXYGEN_CONSUMPTION_PER_SECOND := 0.1
+const PLAYER_OXYGEN_RESTORE_PER_SECOND := 0.1
+const PLAYER_SUFFOCATION_DAMAGE_PER_SECOND := 10.0
 const SHIP_OXYGEN_REFILL_REQUEST_INTERVAL := 0.25
+const LOW_OXYGEN_WARNING_PERCENT := 20.0
 
 ## Open-space EVA: 6DOF — включается телепортом с шлюза (NetworkManager) или в space_eva.
 @export var eva_mode: bool = false
@@ -100,11 +101,11 @@ var is_dead: bool = false:
 var current_health: float = VITAL_DEFAULT_MAX:
 	set(value):
 		current_health = clampf(value, VITAL_MIN_VALUE, max_health)
-		_emit_vitals_changed()
+		_on_current_health_changed()
 var current_oxygen: float = VITAL_DEFAULT_MAX:
 	set(value):
 		current_oxygen = clampf(value, VITAL_MIN_VALUE, max_oxygen)
-		_emit_vitals_changed()
+		_on_current_oxygen_changed()
 var current_pressure: float = VITAL_DEFAULT_MAX:
 	set(value):
 		current_pressure = clampf(value, VITAL_MIN_VALUE, max_pressure)
@@ -113,6 +114,7 @@ var current_pressure: float = VITAL_DEFAULT_MAX:
 var _ship_oxygen_breath_pending: float = 0.0
 var _ship_oxygen_refill_pending: float = 0.0
 var _ship_oxygen_refill_timer: float = 0.0
+var _oxygen_warning_material: ShaderMaterial = null
 var _death_overlay: Control = null
 ## Кратковременно при модальном UI (E на интерактиве) — ввод/физика отключены.
 var modal_ui_block: bool = false
@@ -201,6 +203,7 @@ func _setup_local_player() -> void:
 	if eva_mode:
 		head.rotation = Vector3.ZERO
 		up_direction  = Vector3.UP
+	_setup_oxygen_warning_effect()
 	_setup_ping_display()
 
 
@@ -230,9 +233,6 @@ func set_modal_ui_block(v: bool) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_multiplayer_authority():
-		return
-	if _is_debug_death_event(event):
-		_die()
 		return
 	if is_dead:
 		_process_dead_look_input(event)
@@ -297,6 +297,7 @@ func _physics_process(delta: float) -> void:
 		_update_voice_tx_dot()
 		if not is_dead:
 			_update_player_oxygen(delta)
+			_update_suffocation_damage(delta)
 	if not is_multiplayer_authority():
 		return
 	if is_dead:
@@ -583,6 +584,47 @@ func reset_player_vitals() -> void:
 	current_pressure = max_pressure
 
 
+func _on_current_health_changed() -> void:
+	_emit_vitals_changed()
+	if current_health <= VITAL_MIN_VALUE and not is_dead and is_inside_tree() and is_multiplayer_authority():
+		_die()
+
+
+func _on_current_oxygen_changed() -> void:
+	_emit_vitals_changed()
+	_update_oxygen_warning_effect()
+
+
+func _setup_oxygen_warning_effect() -> void:
+	var shader_rect := get_node_or_null("ShaiderLayer/ColorRect") as ColorRect
+	if shader_rect == null:
+		return
+	var shader_material := shader_rect.material as ShaderMaterial
+	if shader_material == null:
+		return
+	_oxygen_warning_material = shader_material.duplicate() as ShaderMaterial
+	shader_rect.material = _oxygen_warning_material
+	_update_oxygen_warning_effect()
+
+
+func _update_oxygen_warning_effect() -> void:
+	if _oxygen_warning_material == null:
+		return
+	var oxygen_percent := 100.0
+	if max_oxygen > VITAL_MIN_VALUE:
+		oxygen_percent = current_oxygen / max_oxygen * 100.0
+	var warning_strength := 0.0
+	if oxygen_percent < LOW_OXYGEN_WARNING_PERCENT:
+		warning_strength = clampf((LOW_OXYGEN_WARNING_PERCENT - oxygen_percent) / LOW_OXYGEN_WARNING_PERCENT, 0.0, 1.0)
+	_oxygen_warning_material.set_shader_parameter("red_vignette_strength", warning_strength)
+
+
+func _update_suffocation_damage(delta: float) -> void:
+	if current_oxygen > VITAL_MIN_VALUE:
+		return
+	change_health(-PLAYER_SUFFOCATION_DAMAGE_PER_SECOND * delta)
+
+
 func apply_oxygen_exchange_from_ship(breath_amount: float, granted_amount: float) -> void:
 	var uncovered_breath := maxf(0.0, breath_amount - granted_amount)
 	if uncovered_breath > 0.0:
@@ -615,7 +657,7 @@ func _update_player_oxygen(delta: float) -> void:
 
 
 func _can_refill_oxygen_from_ship() -> bool:
-	return not eva_mode
+	return not eva_mode or eva_shuttle_tether_attached
 
 
 func _emit_vitals_changed() -> void:
@@ -704,17 +746,6 @@ func hide_hint() -> void:
 	label.outline_modulate = Color(0, 0, 0, 0)
 
 
-func _is_debug_death_event(event: InputEvent) -> bool:
-	if not (event is InputEventKey):
-		return false
-	var key_event := event as InputEventKey
-	return (
-		key_event.pressed
-		and not key_event.echo
-		and (key_event.physical_keycode == DEBUG_DEATH_KEY or key_event.keycode == DEBUG_DEATH_KEY)
-	)
-
-
 func _process_dead_look_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if eva_mode:
@@ -749,6 +780,8 @@ func _revive() -> void:
 	modal_ui_block = false
 	inventory_open = false
 	menu_open = false
+	if current_health <= VITAL_MIN_VALUE:
+		current_health = max_health
 	_hide_hover_hint()
 	if _death_overlay != null and is_instance_valid(_death_overlay):
 		_death_overlay.queue_free()
