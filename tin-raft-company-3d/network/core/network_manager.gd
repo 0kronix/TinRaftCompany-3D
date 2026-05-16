@@ -467,3 +467,47 @@ func _rpc_shuttle_pilot_input(path_str: String, bits: int) -> void:
 	if from_id < 1:
 		return
 	_shuttle_sync.apply_client_pilot_input(path_str, from_id, bits)
+
+
+# ── EVA dual radar (режим + снимки ~10 Гц) ───────────────────────────────────
+
+func broadcast_eva_radar_state(mode: int, follow_peer_id: int) -> void:
+	if not MultiplayerRuntime.has_active_session_for(self):
+		return
+	if not is_session_active() or not multiplayer.is_server():
+		return
+	_rpc_eva_radar_state.rpc(mode, follow_peer_id)
+
+
+@rpc("authority", "reliable", "call_local")
+func _rpc_eva_radar_state(mode: int, follow_peer_id: int) -> void:
+	for n: Node in get_tree().get_nodes_in_group("eva_radar_cluster"):
+		if n.has_method("apply_radar_state"):
+			n.apply_radar_state(mode, follow_peer_id)
+
+
+func broadcast_eva_radar_snapshot(types: PackedByteArray, positions: PackedVector3Array) -> void:
+	if not MultiplayerRuntime.has_active_session_for(self):
+		return
+	if not is_session_active() or not multiplayer.is_server():
+		return
+	_rpc_eva_radar_snapshot.rpc(types, positions)
+
+
+@rpc("authority", "unreliable", "call_local")
+func _rpc_eva_radar_snapshot(types: PackedByteArray, positions: PackedVector3Array) -> void:
+	for n: Node in get_tree().get_nodes_in_group("eva_radar_cluster"):
+		if n.has_method("apply_radar_snapshot"):
+			n.apply_radar_snapshot(positions, types)
+
+
+func sync_eva_radar_to_late_client(peer_id: int) -> void:
+	if not multiplayer.is_server() or peer_id < 1:
+		return
+	var list: Array[Node] = get_tree().get_nodes_in_group("eva_radar_cluster")
+	if list.is_empty():
+		return
+	var c: Node = list[0]
+	if c.has_method("get_radar_state_for_sync"):
+		var d: Dictionary = c.get_radar_state_for_sync()
+		_rpc_eva_radar_state.rpc_id(peer_id, int(d.get("mode", 0)), int(d.get("follow_peer_id", 1)))

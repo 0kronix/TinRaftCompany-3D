@@ -99,6 +99,7 @@ func _rpc_client_ready() -> void:
 	if not destroyed.is_empty():
 		_rpc_sync_destroyed.rpc_id(peer_id, destroyed)
 	NetworkManager.sync_field_asteroids_to_late_client(peer_id)
+	NetworkManager.sync_eva_radar_to_late_client(peer_id)
 
 
 ## Received by a newly joined client; removes nodes the server already destroyed.

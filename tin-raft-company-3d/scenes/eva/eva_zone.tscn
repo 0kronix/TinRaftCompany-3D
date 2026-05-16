@@ -18,6 +18,7 @@
 [ext_resource type="Script" uid="uid://s2xbk7ukfxtu" path="res://scenes/eva/interior_window_viewport.gd" id="17_intvw"]
 [ext_resource type="PackedScene" uid="uid://c52shy4avwqm3" path="res://scenes/items/storage_crate.tscn" id="18_crate"]
 [ext_resource type="PackedScene" uid="uid://38pu2cufhfee" path="res://scenes/items/storage_crate_eject.tscn" id="19_eject"]
+[ext_resource type="PackedScene" uid="uid://boxhcvnb5ther" path="res://scenes/eva/eva_dual_radar_cluster.tscn" id="20_radar"]
 
 [node name="EvaZone" type="Node3D" unique_id=505347578]
 
@@ -134,6 +135,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1082118, 1.5, -4.5)
 
 [node name="SensorPanel" parent="ShipInterior" unique_id=353215927 instance=ExtResource("12_ip")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72062695, 1.5, -4.5)
+
+[node name="EvaDualRadarCluster" parent="ShipInterior" unique_id=20002001 instance=ExtResource("20_radar")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 1.85, 1.48, -4.42)
 
 [node name="EvaAirlock" parent="ShipInterior" unique_id=77895095 instance=ExtResource("4_air")]
 transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 3.1, 1.2, -4.7)

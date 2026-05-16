@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://dhe1warq7okox"]
+
+[ext_resource type="Script" path="res://scenes/eva/eva_radar_3d_hologram.gd" id="1_holo"]
+
+[sub_resource type="SphereMesh" id="SphereBubble"]
+radius = 2.2
+height = 4.4
+
+[sub_resource type="StandardMaterial3D" id="MatBubble"]
+render_priority = -4
+transparency = 1
+blend_mode = 1
+depth_draw_mode = 2
+shading_mode = 0
+albedo_color = Color(0.12, 0.42, 0.72, 0.07)
+
+[node name="EvaRadar3DHologram" type="Node3D"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+script = ExtResource("1_holo")
+
+[node name="HologramRoot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.38, 0.22, 0)
+
+[node name="HologramBubble" type="MeshInstance3D" parent="HologramRoot"]
+sorting_offset = -2.0
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("SphereBubble")
+surface_material_override/0 = SubResource("MatBubble")
+
+[node name="HologramPool" type="Node3D" parent="HologramRoot"]

@@ -27,6 +27,12 @@ func validate_command(actor: Node3D, command: Dictionary) -> bool:
 			return target.server_validate_interaction(actor)
 		return true
 
+	var ctype: String = str(command.get("type", ""))
+	if ctype == "radar_set_mode" or ctype == "radar_cycle_peer":
+		if target.has_method("server_validate_interaction"):
+			return target.server_validate_interaction(actor)
+		return true
+
 	if target is Node3D:
 		var distance := actor.global_position.distance_to(target.global_position)
 		if distance > MAX_INTERACT_DISTANCE:

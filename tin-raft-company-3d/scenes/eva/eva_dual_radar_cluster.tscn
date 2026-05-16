@@ -1,0 +1,127 @@
+[gd_scene format=3 uid="uid://boxhcvnb5ther"]
+
+[ext_resource type="Script" uid="uid://diqpxscfrj1iw" path="res://scenes/eva/eva_radar_cluster.gd" id="1_cluster"]
+[ext_resource type="PackedScene" uid="uid://che1warr6vpnx" path="res://scenes/eva/eva_radar_2d_instrument.tscn" id="2_2d"]
+[ext_resource type="PackedScene" uid="uid://dhe1warq7okox" path="res://scenes/eva/eva_radar_3d_hologram.tscn" id="3_3d"]
+[ext_resource type="Script" path="res://scenes/eva/eva_radar_network_button.gd" id="4_net"]
+[ext_resource type="Script" path="res://scenes/eva/eva_radar_zoom_button.gd" id="5_zoom"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_stand"]
+size = Vector3(1.1, 0.14, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="MatStand"]
+albedo_color = Color(0.08, 0.1, 0.14, 1)
+metallic = 0.65
+roughness = 0.45
+
+[sub_resource type="BoxShape3D" id="ShapeBtn"]
+size = Vector3(0.16, 0.1, 0.06)
+
+[sub_resource type="BoxMesh" id="MeshBtn"]
+size = Vector3(0.16, 0.1, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="MatBtnMode"]
+albedo_color = Color(0.15, 0.45, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="MatBtnPeer"]
+albedo_color = Color(0.35, 0.25, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="MatBtnZoom"]
+albedo_color = Color(0.4, 0.4, 0.5, 1)
+
+[node name="EvaDualRadarCluster" type="Node3D"]
+script = ExtResource("1_cluster")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="StandMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.07, 0)
+mesh = SubResource("BoxMesh_stand")
+surface_material_override/0 = SubResource("MatStand")
+
+[node name="EvaRadar2DInstrument" parent="VisualRoot" instance=ExtResource("2_2d")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.7120087)
+
+[node name="EvaRadar3DHologram" parent="VisualRoot" instance=ExtResource("3_3d")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 1.3274606, 0, 0)
+
+[node name="ModeStatusLabel" type="Label3D" parent="VisualRoot"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -0.52, 0.22, 0)
+pixel_size = 0.0022
+modulate = Color(0.35, 1, 0.65, 1)
+text = "RADAR"
+font_size = 18
+horizontal_alignment = 0
+
+[node name="RadarControls" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0.32)
+
+[node name="ModeButton" type="StaticBody3D" parent="RadarControls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32, 0, 0)
+script = ExtResource("4_net")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RadarControls/ModeButton"]
+shape = SubResource("ShapeBtn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RadarControls/ModeButton"]
+mesh = SubResource("MeshBtn")
+surface_material_override/0 = SubResource("MatBtnMode")
+
+[node name="Label3D" type="Label3D" parent="RadarControls/ModeButton"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.04)
+pixel_size = 0.0018
+text = "MODE"
+font_size = 12
+
+[node name="PeerButton" type="StaticBody3D" parent="RadarControls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0, 0)
+script = ExtResource("4_net")
+op = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RadarControls/PeerButton"]
+shape = SubResource("ShapeBtn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RadarControls/PeerButton"]
+mesh = SubResource("MeshBtn")
+surface_material_override/0 = SubResource("MatBtnPeer")
+
+[node name="Label3D" type="Label3D" parent="RadarControls/PeerButton"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.04)
+pixel_size = 0.0018
+text = "PEER"
+font_size = 12
+
+[node name="ZoomInButton" type="StaticBody3D" parent="RadarControls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14, 0, 0)
+script = ExtResource("5_zoom")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RadarControls/ZoomInButton"]
+shape = SubResource("ShapeBtn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RadarControls/ZoomInButton"]
+mesh = SubResource("MeshBtn")
+surface_material_override/0 = SubResource("MatBtnZoom")
+
+[node name="Label3D" type="Label3D" parent="RadarControls/ZoomInButton"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.04)
+pixel_size = 0.0018
+text = "Z+"
+font_size = 12
+
+[node name="ZoomOutButton" type="StaticBody3D" parent="RadarControls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0, 0)
+script = ExtResource("5_zoom")
+dir = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RadarControls/ZoomOutButton"]
+shape = SubResource("ShapeBtn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RadarControls/ZoomOutButton"]
+mesh = SubResource("MeshBtn")
+surface_material_override/0 = SubResource("MatBtnZoom")
+
+[node name="Label3D" type="Label3D" parent="RadarControls/ZoomOutButton"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.04)
+pixel_size = 0.0018
+text = "Z-"
+font_size = 12

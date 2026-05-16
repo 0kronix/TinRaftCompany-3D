@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://che1warr6vpnx"]
+
+[ext_resource type="Script" path="res://scenes/eva/eva_radar_2d_instrument.gd" id="1_inst"]
+[ext_resource type="Script" path="res://scenes/eva/eva_radar_2d_panel.gd" id="2_r2d"]
+
+[sub_resource type="QuadMesh" id="QuadRadar"]
+size = Vector2(0.62, 0.62)
+
+[node name="EvaRadar2DInstrument" type="Node3D"]
+script = ExtResource("1_inst")
+
+[node name="Radar2DViewport" type="SubViewport" parent="."]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(256, 256)
+render_target_update_mode = 4
+
+[node name="RadarCanvas" type="Control" parent="Radar2DViewport"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_r2d")
+
+[node name="Radar2DViewportDisplay" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.36, 0.22, 0)
+mesh = SubResource("QuadRadar")
